@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+      "incremental": true, 
+      "target": "es2019", 
+      "module": "commonjs", 
+  
+      "outDir": "./built", 
+      "rootDir": "./src", 
+      "downlevelIteration": true, 
+      "strict": true, 
+      "strictNullChecks": true, 
+      "strictFunctionTypes": true, 
+      "strictBindCallApply": true, 
+      "strictPropertyInitialization": true,
+      "noImplicitThis": true, 
+      "alwaysStrict": true, 
+  
+      "noUnusedLocals": false, 
+      "esModuleInterop": true, 
+  
+      "skipLibCheck": true, 
+      "forceConsistentCasingInFileNames": true
+    }
+}
+  

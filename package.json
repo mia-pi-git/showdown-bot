@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "@types/node-fetch": "^2.5.10",
+    "node-fetch": "^2.6.1",
+    "typescript": "^4.2.4"
+  },
+  "name": "ts-ps-bot",
+  "version": "0.0.1",
+  "main": "built/index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "start": "npm run build && node built/index.js start",
+    "test": "npx tsc && npx jest"
+  },
+  "keywords": [
+    "bot",
+    "pokemon"
+  ]
+}
