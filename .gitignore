@@ -1,3 +1,4 @@
 /node_modules/
 /built/
 /config/config.js
+/tsconfig.tsbuildinfo
