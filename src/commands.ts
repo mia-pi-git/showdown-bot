@@ -10,7 +10,11 @@
 import {PSUser} from './user';
 import {PSRoom} from './room';
 import {splitFirst, toID} from './lib/utils';
-export type CommandReturn = void | boolean | string;
+
+export enum CommandResponses {
+    NOT_FOUND,
+    NOT_COMMAND,
+}
 
 export abstract class CommandBase {
     room: PSRoom | null;
@@ -21,7 +25,7 @@ export abstract class CommandBase {
         this.room = (roomid ? PSRoom.get(roomid) : false) || null;
         this.target = target;
     }
-    abstract run(): CommandReturn | Promise<CommandReturn>;
+    abstract run(): void | Promise<void>;
     static cmdName = '';
     abstract init(): any;
     is(group: string, room?: PSRoom) {
@@ -38,12 +42,13 @@ export abstract class CommandBase {
     }
     static readonly NOT_COMMAND = null;
     static readonly NOT_FOUND = false;
+    static responses = CommandResponses;
     static tryCommand(message: string, user: string, room?: string) {
-        if (!message.startsWith(PS.settings.commandToken)) return this.NOT_COMMAND;
+        if (!message.startsWith(PS.settings.commandToken)) return CommandResponses.NOT_COMMAND;
         const [rawCmd, rest] = splitFirst(message.slice(1), ' ');
         const cmd = toID(rawCmd);
         const handler = PS.commands[cmd];
-        if (!handler) return this.NOT_FOUND;
+        if (!handler) return CommandResponses.NOT_FOUND;
         const obj: CommandBase = new (handler as any)(rest, room || null, user);
         return Promise.resolve(obj.init())
             .then(() => obj.run())

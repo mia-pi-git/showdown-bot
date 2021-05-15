@@ -9,6 +9,7 @@ export interface BotSettings {
     rooms?: string[];
     status?: string;
     commandToken: string;
+    loglevel?: number;
 }
 
 export interface PLine {
@@ -38,10 +39,14 @@ export class PSInterface {
             }
         },
         'c:'(args, line) {
-
+            const [, identity, message] = args;
+            return CommandBase.tryCommand(message, identity.slice(1), line.roomid as string);
         },
-        pm(args, line) {
-            
+        pm(args) {
+            const [sender, receiver, message] = args;
+            if (utils.toID(receiver) !== utils.toID(this.settings.name)) return;
+            this.debug(`Received PM from ${sender.slice(1)}: ${message}`);
+            return CommandBase.tryCommand(message, sender.slice(1));
         },
         queryresponse(args, line) {
             const type = args.shift()!;
@@ -76,6 +81,10 @@ export class PSInterface {
     send(data: string, roomid?: string) {
         if (!roomid || roomid === 'global') roomid = '';
         this.connection.send(`${roomid}|${data}`);
+    }
+    debug(message: string) {
+        if (!this.settings.loglevel || this.settings.loglevel < 3) return;
+        console.log(message);
     }
     async listen() {
         for await (const {type, data} of this.connection) {
