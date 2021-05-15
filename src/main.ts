@@ -28,7 +28,7 @@ export class PSInterface {
     listeners: {[type: string]: (this: PSInterface, args: string[], line: PLine) => any} = {
         challstr(args) {
             const [key, challstr] = args;
-            void this.login(challstr, parseInt(key));
+            return this.login(challstr, parseInt(key));
         },
         updateuser(args) {
             const cur = this.curName.slice();
@@ -41,7 +41,7 @@ export class PSInterface {
 
         },
         pm(args, line) {
-
+            
         },
         queryresponse(args, line) {
             const type = args.shift()!;
@@ -104,9 +104,13 @@ export class PSInterface {
             }
         }
     }
-    handleMessage(raw: string) {
+    async handleMessage(raw: string) {
         const line = PSInterface.parseLine(raw);
-        this.listeners[line.type]?.call(this, line.args, line);
+        try {
+            await this.listeners[line.type]?.call(this, line.args, line);
+        } catch (e) {
+            console.log(`Err in data handler: ${e.message} - ${raw}`);
+        }
     }
     static parseLine(received: string): PLine {
         let [possibleRoomid, rest] = utils.splitFirst(received, '\n');
@@ -141,7 +145,7 @@ export class PSInterface {
         }
         if (!data.assertion) {
             console.log(data);
-            throw new Error(`Missing assertion - data logged above`);
+            throw new Error(`Missing assertion (data logged above) `);
         }
         if (data.assertion.startsWith(';;')) {
             throw new Error(data.assertion.slice(2));

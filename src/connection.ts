@@ -12,7 +12,7 @@ export class PSConnection extends DataStream<PSStreamMessage> {
     recoverErrors: boolean;
     constructor(server = 'sim3', port = 443, recoverErrors?: boolean) {
         super();
-        this.url = `wss://${server}.psim.us:${port}/showdown`;
+        this.url = `wss://${server}.psim.us:${port}/showdown/websocket`;
         this.recoverErrors = recoverErrors || false;
         this.socket = this.open();
     }
