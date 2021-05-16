@@ -41,15 +41,21 @@ export class PSInterface {
                 console.log(`name updated to ${this.curName}`);
             }
         },
-        'c:'(args, line) {
+        async 'c:'(args, line) {
             const [, identity, message] = args;
-            return CommandBase.tryCommand(message, identity.slice(1), line.roomid as string);
+            const res = await CommandBase.tryCommand(message, identity.slice(1), line.roomid as string);
+            if (res === CommandBase.responses.NOT_FOUND) {
+                this.send(`/pm ${identity},Command not found.`);
+            }
         },
-        pm(args) {
+        async pm(args) {
             const [sender, receiver, message] = args;
             if (utils.toID(receiver) !== utils.toID(this.settings.name)) return;
             this.debug(`Received PM from ${sender.slice(1)}: ${message}`);
-            return CommandBase.tryCommand(message, sender.slice(1));
+            const res = await CommandBase.tryCommand(message, sender.slice(1));
+            if (res === CommandBase.responses.NOT_FOUND) {
+                this.send(`/pm ${sender},Command not found.`);
+            }
         },
         queryresponse(args, line) {
             const type = args.shift()!;

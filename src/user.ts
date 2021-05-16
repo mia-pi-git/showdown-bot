@@ -26,7 +26,6 @@ export class PSUser {
     constructor(name: string) {
         this.name = name;
         this.id = toID(name);
-        console.log(this.name, this.id, name);
         void this.fetchData();
     }
     async fetchData() {
