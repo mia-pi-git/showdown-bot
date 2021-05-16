@@ -1,7 +1,7 @@
 import {PSConnection} from './connection';
 import * as utils from './lib/utils';
 import * as fs from 'fs';
-import {CommandBase, CommandError} from './commands';
+import {CommandBase, CommandError, FilterBase} from './commands';
 import {PSUser} from './user';
 import {PSRoom} from './room';
 
@@ -47,6 +47,14 @@ export class PSInterface {
             if (res === CommandBase.responses.NOT_FOUND) {
                 this.send(`/pm ${identity},Command not found.`);
             }
+            if (res === CommandBase.responses.NOT_COMMAND) {
+                if (identity.charAt(0) === ' ') {
+                    for (const filter of this.filters) {
+                        const f = new (filter as any)(message, identity.slice(1), line.roomid as string);
+                        await f.run();
+                    }
+                }
+            }
         },
         async pm(args) {
             const [sender, receiver, message] = args;
@@ -76,11 +84,9 @@ export class PSInterface {
             }
         },
     }
-    /**
-     * Use PSInterface#registerCommands to add to this.
-     * (Or PSInterface#getCommandsFrom, which will load from the given filepath)
-     */
+
     commands: {[k: string]: typeof CommandBase} = {};
+    filters: typeof FilterBase[] = [];
     /**
      * Pending /crq requests.
      */
@@ -186,10 +192,14 @@ export class PSInterface {
         }
         this.send(`/trn ${this.settings.name},0,${data.assertion}`);
     }
-    loadCommandsFrom(path: string) {
-        const handlers = require(path).commands;
+    loadPluginsFrom(path: string) {
+        const imports = require(path);
+        const handlers = imports.commands;
         for (const name in handlers) {
             this.commands[utils.toID(name)] = handlers[name];
+        }
+        if (imports.filters) {
+            this.filters.push(...imports.filters);
         }
     }
     loadPlugins() {
@@ -197,11 +207,12 @@ export class PSInterface {
             const path = `${__dirname}/plugins`;
             const files = fs.readdirSync(path);
             for (const file of files) {
-                this.loadCommandsFrom(`${path}/${file}`);
+                this.loadPluginsFrom(`${path}/${file}`);
             }
         } catch (e) {}
     }
     CommandBase = CommandBase;
+    FilterBase = FilterBase;
     CommandError = CommandError;
     User = PSUser;
     Room = PSRoom;

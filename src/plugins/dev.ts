@@ -74,3 +74,4 @@ class ReloadCommands extends PS.CommandBase {
 }
 
 export const commands = {Eval, Kill, Ping, ReloadCommands};
+export const filters = [];

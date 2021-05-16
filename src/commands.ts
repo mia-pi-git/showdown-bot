@@ -69,3 +69,45 @@ export abstract class CommandBase {
             });
     }
 }
+
+export abstract class FilterBase {
+    message: string;
+    user: PSUser;
+    room: PSRoom | null;
+    constructor(message: string, userid: string, room: string | null) {
+        this.message = message;
+        this.user = PSUser.get(userid);
+        this.room = PSRoom.get(room || "") || null;
+    }
+    abstract run(): void | boolean | Promise<void | boolean>;
+    send(message: string) {
+        if (this.room && this.room.auth.get(this.user.id)) {
+            this.room.send(message);
+        } else {
+            this.user.send(message);
+        }
+    }
+    hasAuth() {
+        return this.room && this.room.auth.get(toID(PS.settings.name)) === '*'
+    }
+    mute(reason?: string) {
+        if (this.hasAuth()) {
+            this.send(`/mute ${this.user.id},${reason || ""}`);
+        }
+    }
+    warn(reason?: string) {
+        if (this.hasAuth()) {
+            this.send(`/warn ${this.user.id},${reason || ""}`);
+        }
+    }
+    ban(reason?: string) {
+        if (this.hasAuth()) {
+            this.send(`/ban ${this.user.id},${reason || ""}`);
+        }
+    }
+    note(target: string) {
+        if (this.hasAuth()) {
+            this.send(`/mn ${target}`);
+        }
+    }
+}
