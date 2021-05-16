@@ -16,6 +16,13 @@ export enum CommandResponses {
     NOT_COMMAND,
 }
 
+export class CommandError extends Error {
+    constructor(message: string) {
+        super(message);
+        Error.captureStackTrace(this, CommandError);
+    }
+}
+
 export abstract class CommandBase {
     room: PSRoom | null;
     user: PSUser;
@@ -25,8 +32,7 @@ export abstract class CommandBase {
         this.room = (roomid ? PSRoom.get(roomid) : false) || null;
         this.target = target;
     }
-    abstract run(): void | Promise<void>;
-    static cmdName = '';
+    abstract run(): void | boolean | Promise<void | boolean>;
     abstract init(): any;
     is(group: string, room?: PSRoom) {
         const uGroup = room ? room.auth.get(this.user.id) || this.user.group : this.user.group;
@@ -40,8 +46,12 @@ export abstract class CommandBase {
             this.user.send(message);
         }
     }
-    static readonly NOT_COMMAND = null;
-    static readonly NOT_FOUND = false;
+    isSysop() {
+        if (!PS.settings.sysops?.includes(this.user.id)) {
+            throw new PS.CommandError(`Access denied.`);
+        }
+    }
+
     static responses = CommandResponses;
     static tryCommand(message: string, user: string, room?: string) {
         if (!message.startsWith(PS.settings.commandToken)) return CommandResponses.NOT_COMMAND;
@@ -53,7 +63,7 @@ export abstract class CommandBase {
         return Promise.resolve(obj.init())
             .then(() => obj.run())
             .catch(e => {
-                if (e.name.endsWith('ErrorMessage')) {
+                if (e.name.endsWith('CommandError')) {
                     return obj.send(e.message);
                 } else throw e;
             });

@@ -11,6 +11,10 @@ if (!exists(`${__dirname}/../config/config.js`)) {
 }
 
 import {PSInterface} from './main';
+import * as utils from './lib/utils';
+
+global.utils = utils;
+global.toID = utils.toID;
 
 (global as any).PS = new PSInterface('config/config.js');
 

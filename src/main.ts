@@ -1,7 +1,9 @@
 import {PSConnection} from './connection';
 import * as utils from './lib/utils';
 import * as fs from 'fs';
-import {CommandBase} from './commands';
+import {CommandBase, CommandError} from './commands';
+import {PSUser} from './user';
+import {PSRoom} from './room';
 
 export interface BotSettings {
     name: string;
@@ -10,6 +12,7 @@ export interface BotSettings {
     status?: string;
     commandToken: string;
     loglevel?: number;
+    sysops?: string[];
 }
 
 export interface PLine {
@@ -54,6 +57,16 @@ export class PSInterface {
             if (resolve) {
                 resolve(JSON.parse(args.join('|')));
                 this.queries.delete(type);
+                if (this.waitingQueries[type]) {
+                    const next = this.waitingQueries[type].shift();
+                    if (!next) {
+                        delete this.waitingQueries[type];
+                        return;
+                    }
+                    const [data, resolve] = next;
+                    this.queries.set(type, resolve);
+                    this.send(`/crq ${type}${data ? ` ${data}` : ''}`);
+                }
             }
         },
     }
@@ -70,12 +83,18 @@ export class PSInterface {
         this.settings = PSInterface.getConfig(settings);
         this.connection = new PSConnection();
         void this.listen();
-        this.loadPlugins();
+        process.nextTick(() => this.loadPlugins());
     }
+    waitingQueries: {[k: string]: [string, (data: any) => void][]} = {};
     query(type: string, data = '') {
         return new Promise<any>(resolve => {
-            this.send(`/crq ${type}${data ? ` ${data}` : ''}`);
-            this.queries.set(type, resolve);
+            if (this.queries.has(type)) {
+                if (!this.waitingQueries[type]) this.waitingQueries[type] = [];
+                this.waitingQueries[type].push([data, resolve]);
+            } else {
+                this.send(`/crq ${type}${data ? ` ${data}` : ''}`);
+                this.queries.set(type, resolve);
+            }
         });
     }
     send(data: string, roomid?: string) {
@@ -100,7 +119,7 @@ export class PSInterface {
             }
 
             case 'close': {
-                console.log(`Bot socket closed - code ${data.code}, reason '${data.reason}'`);
+                console.log(`Bot socket closed`);
                 process.exit();
             }
 
@@ -148,7 +167,7 @@ export class PSInterface {
             act: 'login',
             challstr,
             challengekeyid,
-        });
+        }, data => data.slice(1));
         if (data.actionerror) {
             throw new Error(data.actionerror);
         }
@@ -162,16 +181,22 @@ export class PSInterface {
         this.send(`/trn ${this.settings.name},0,${data.assertion}`);
     }
     loadCommandsFrom(path: string) {
-        const handler = require(`${__dirname}/../${path}`).default;
-        this.commands[handler.cmdName] = handler;
+        const handlers = require(path).commands;
+        for (const name in handlers) {
+            this.commands[utils.toID(name)] = handlers[name];
+        }
     }
     loadPlugins() {
         try {
-            const path = require.resolve('./commands');
+            const path = `${__dirname}/plugins`;
             const files = fs.readdirSync(path);
             for (const file of files) {
                 this.loadCommandsFrom(`${path}/${file}`);
             }
         } catch (e) {}
     }
+    CommandBase = CommandBase;
+    CommandError = CommandError;
+    User = PSUser;
+    Room = PSRoom;
 }

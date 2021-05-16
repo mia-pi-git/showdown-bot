@@ -26,10 +26,11 @@ export class PSUser {
     constructor(name: string) {
         this.name = name;
         this.id = toID(name);
+        console.log(this.name, this.id, name);
         void this.fetchData();
     }
     async fetchData() {
-        const info = await PS.query('userinfo', this.id);
+        const info = await PS.query('userdetails', this.id);
         if (!info) {
             return;
         }
