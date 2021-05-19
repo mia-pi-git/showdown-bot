@@ -18,7 +18,6 @@ function bash(cmd: string) {
 }
 
 export class Eval extends PS.CommandBase {
-    async init() {}
     async run() {
         this.isSysop();
 
@@ -29,7 +28,6 @@ export class Eval extends PS.CommandBase {
 }
 
 class Kill extends PS.CommandBase {
-    async init() {}
     async run() {
         this.isSysop();
         console.log(`${this.user.name} used /kill`);
@@ -39,7 +37,6 @@ class Kill extends PS.CommandBase {
 }
 
 class Ping extends PS.CommandBase {
-    async init() {}
     async run() {
         this.send(`Pong!`);
     }
@@ -47,7 +44,6 @@ class Ping extends PS.CommandBase {
 }
 
 class ReloadCommands extends PS.CommandBase {
-    async init() {}
     async run() {
         this.isSysop();
         this.send(`Reloading...`);
@@ -67,7 +63,6 @@ class ReloadCommands extends PS.CommandBase {
 }
 
 export class Help extends PS.CommandBase {
-    init() {}
     run() {
         let cmd;
         const target = toID(this.target);

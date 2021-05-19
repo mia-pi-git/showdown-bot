@@ -43,7 +43,6 @@ export class SpamFilter extends PS.FilterBase {
 }
 
 export class AutoModeration extends PS.CommandBase {
-    init() {}
     run() {
         this.is('@');
         let [setting, roomid] = utils.splitFirst(this.target, ' ').map(u => u.trim());
@@ -73,7 +72,6 @@ export class AutoModeration extends PS.CommandBase {
 }
 
 export class NoTolerance extends PS.CommandBase {
-    init() {}
     run() {
         this.is('@');
         if (this.room) this.room = null;
@@ -94,7 +92,6 @@ export class NoTolerance extends PS.CommandBase {
 }
 
 export class RemoveNoTolerance extends PS.CommandBase {
-    init() {}
     run() {
         this.is('@');
         if (this.room) this.room = null;

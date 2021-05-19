@@ -33,7 +33,7 @@ export abstract class CommandBase {
         this.target = target;
     }
     abstract run(): void | boolean | Promise<void | boolean>;
-    abstract init(): any;
+    init(): void | Promise<void> {};
     atLeast(group: string, room: PSRoom | null) {
         const uGroup = (room ? room.auth.get(this.user.id) : this.user.group) || this.user.group;
         const groups = [" ", "whitelist", "+", "☆", "%", "@", "★", "*", "#", "&"];
