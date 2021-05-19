@@ -1,7 +1,6 @@
 /**
  * Example command.
  */
-import {visualize} from '../lib/utils';
 import {exec} from 'child_process';
 
 function bash(cmd: string) {
@@ -24,16 +23,8 @@ export class Eval extends PS.CommandBase {
         this.isSysop();
 
         this.send(`!code >> ${this.target}`);
-        let res;
-        try {
-            res = eval(this.target);
-            if (typeof res?.then === 'function') {
-                res = `Promise -> ${visualize(await res)}`;
-            }
-        } catch (e) {
-            res = `Err: ${e.message}\n${e.stack}`;
-        }
-        this.send(`!code << ${visualize(res)}`);
+        const res = await utils.cleanEval(this.target, eval);
+        this.send(`!code << ${res}`);
     }
 }
 
@@ -44,6 +35,7 @@ class Kill extends PS.CommandBase {
         console.log(`${this.user.name} used /kill`);
         process.exit();
     }
+    static aliases = ['restart'];
 }
 
 class Ping extends PS.CommandBase {
@@ -51,6 +43,7 @@ class Ping extends PS.CommandBase {
     async run() {
         this.send(`Pong!`);
     }
+    static help = ['/ping - Ping the bot.'];
 }
 
 class ReloadCommands extends PS.CommandBase {
@@ -73,5 +66,28 @@ class ReloadCommands extends PS.CommandBase {
     }
 }
 
-export const commands = {Eval, Kill, Ping, ReloadCommands};
+export class Help extends PS.CommandBase {
+    init() {}
+    run() {
+        let cmd;
+        const target = toID(this.target);
+        for (const [k, handler] of Object.entries(PS.commands)) {
+            if (k === target || handler.aliases.includes(target)) {
+                cmd = k;
+            }
+        }
+        if (!cmd) {
+            return this.send(`Command ${target} not found.`);
+        }
+        const help = PS.commands[cmd].help;
+        if (!help) {
+            return this.send(`That command has no help info.`);
+        }
+        return this.send(`Help for ${cmd}: ` + PS.commands[cmd].help?.join(' '));
+    }
+    static aliases = ['guide'];
+    static help = ['/help [command] - get info on the given command.'];
+}
+
+export const commands = {Eval, Kill, Ping, ReloadCommands, Help};
 export const filters = [];

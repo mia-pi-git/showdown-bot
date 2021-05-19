@@ -13,6 +13,7 @@ export interface BotSettings {
     commandToken: string;
     loglevel?: number;
     sysops?: string[];
+    repl?: boolean;
 }
 
 export interface PLine {
@@ -40,6 +41,13 @@ export class PSInterface {
             if (utils.toID(cur) !== utils.toID(this.curName)) {
                 console.log(`name updated to ${this.curName}`);
             }
+            if (!toID(this.curName).startsWith('guest')) {
+                if (this.settings.rooms) {
+                    for (const room of this.settings.rooms) {
+                        this.join(room);
+                    }
+                }
+            }
         },
         async 'c:'(args, line) {
             const [, identity, message] = args;
@@ -59,7 +67,7 @@ export class PSInterface {
         async pm(args) {
             const [sender, receiver, message] = args;
             if (utils.toID(receiver) !== utils.toID(this.settings.name)) return;
-            this.debug(`Received PM from ${sender.slice(1)}: ${message}`);
+            this.debug(`[${new Date().toTimeString()}] Received PM from ${sender.slice(1)}: ${message}`);
             const res = await CommandBase.tryCommand(message, sender.slice(1));
             if (res === CommandBase.responses.NOT_FOUND) {
                 this.send(`/pm ${sender},Command not found.`);
@@ -192,6 +200,17 @@ export class PSInterface {
         }
         this.send(`/trn ${this.settings.name},0,${data.assertion}`);
     }
+
+    inRooms = new Set<PSRoom>();
+
+    join(room: string) {
+        this.send(`/join ${toID(room)}`);
+        this.inRooms.add(new PSRoom(toID(room)));
+    }
+
+    /************************************
+     * Plugin stuff
+     ************************************/
     loadPluginsFrom(path: string) {
         const imports = require(path);
         const handlers = imports.commands;
@@ -216,4 +235,23 @@ export class PSInterface {
     CommandError = CommandError;
     User = PSUser;
     Room = PSRoom;
+
+    /************************************
+     * REPL tools
+    ************************************/
+    eval = (cmd: string) => eval(cmd);
+    repl = (() => {
+        const {repl} = require('../config/config');
+        if (repl) {
+            const stream = new utils.Stream<string>({nodeStream: process.stdin});
+            void (async () => {
+                for await (const line of stream) {
+                    const res = await utils.cleanEval(line, code => this.eval(code));
+                    console.log(`< ${res}`);
+                }
+            })();
+            return stream;
+        }
+        return new utils.Stream<string>();
+    })();
 }

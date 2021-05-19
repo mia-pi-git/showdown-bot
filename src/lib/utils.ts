@@ -1,4 +1,5 @@
 import axios from 'axios';
+import fs from 'fs';
 
 /*export async function request(url: string, body?: {[k: string]: any}, method = 'GET') {
     if (body) {
@@ -128,3 +129,38 @@ export function visualize(value: any, depth = 0): string {
 	if (constructor && !buf && constructor !== 'null') return constructor;
 	return `${constructor}{${buf}}`;
 }
+
+export function makeAsyncEval(evalFunct: (code: string) => any) {
+	return (async (code: string) => {
+		let res = evalFunct(code);
+		if (typeof res?.then === 'function') {
+            res = await res;
+        }
+		return res;
+	});
+}
+
+export async function cleanEval(code: string, evalFunct: (code: string) => any) {
+	let res;
+    try {
+        res = await makeAsyncEval(evalFunct)(code);
+        res = utils.visualize(res);
+    } catch (e) {
+        res = e.stack;
+    }
+	return res;
+}
+
+export function requireJSON(requireFunction: (path: string) => any, path: string) {
+	try {
+		return requireFunction(path);
+	} catch (e) {
+		return {};
+	}
+}
+
+export function writeJSON(obj: any, path: string) {
+	fs.writeFileSync(`${__filename}/../${path}`, JSON.stringify(obj));
+}
+
+export {DataStream as Stream} from './streams';

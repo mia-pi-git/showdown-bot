@@ -36,7 +36,7 @@
 				},
 			}
 			nodeStream.on('data', (data: any) => {
-				this.push(data);
+				this.push(data.toString());
 			});
 			nodeStream.on('end', () => {
 				this.pushEnd();

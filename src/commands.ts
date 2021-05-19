@@ -34,10 +34,17 @@ export abstract class CommandBase {
     }
     abstract run(): void | boolean | Promise<void | boolean>;
     abstract init(): any;
-    is(group: string, room?: PSRoom) {
-        const uGroup = room ? room.auth.get(this.user.id) || this.user.group : this.user.group;
+    atLeast(group: string, room: PSRoom | null) {
+        const uGroup = (room ? room.auth.get(this.user.id) : this.user.group) || this.user.group;
         const groups = [" ", "whitelist", "+", "☆", "%", "@", "★", "*", "#", "&"];
-        return groups.indexOf(uGroup) >= groups.indexOf(group);
+        const groupIdx = groups.indexOf(group);
+        return groupIdx > 0 && groups.indexOf(uGroup) >= groupIdx;
+    }
+    is(group: string, room: PSRoom | null = null) {
+        if (!room && this.room) room = this.room;
+        if (!this.atLeast(group, room)) {
+            throw new CommandError(`Access denied.`);
+        }
     }
     send(message: string) {
         if (this.room?.auth.get(this.user.id)) {
@@ -57,7 +64,15 @@ export abstract class CommandBase {
         if (!message.startsWith(PS.settings.commandToken)) return CommandResponses.NOT_COMMAND;
         const [rawCmd, rest] = splitFirst(message.slice(1), ' ');
         const cmd = toID(rawCmd);
-        const handler = PS.commands[cmd];
+        let handler = PS.commands[cmd];
+        if (!handler) {
+            for (const base of Object.values(PS.commands)) {
+                if (base.aliases.includes(cmd)) {
+                    handler = base;
+                    break;
+                }
+            }
+        }
         if (!handler) return CommandResponses.NOT_FOUND;
         const obj: CommandBase = new (handler as any)(rest, room || null, user);
         return Promise.resolve(obj.init())
@@ -68,6 +83,8 @@ export abstract class CommandBase {
                 } else throw e;
             });
     }
+    static help: string[] | null = null;
+    static aliases: string[] = [];
 }
 
 export abstract class FilterBase {
@@ -90,9 +107,9 @@ export abstract class FilterBase {
     hasAuth() {
         return this.room && this.room.auth.get(toID(PS.settings.name)) === '*'
     }
-    mute(reason?: string) {
+    mute(reason?: string, hour = false) {
         if (this.hasAuth()) {
-            this.send(`/mute ${this.user.id},${reason || ""}`);
+            this.send(`/${hour ? 'hour' : ''}mute ${this.user.id},${reason || ""}`);
         }
     }
     warn(reason?: string) {
