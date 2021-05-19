@@ -22,7 +22,7 @@ export class Eval extends PS.CommandBase {
         this.isSysop();
 
         this.send(`!code >> ${this.target}`);
-        const res = await utils.cleanEval(this.target, eval);
+        const res = await utils.cleanEval(this.target, target => eval(target));
         this.send(`!code << ${res}`);
     }
 }
