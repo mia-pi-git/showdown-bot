@@ -235,6 +235,8 @@ export class PSInterface {
     CommandError = CommandError;
     User = PSUser;
     Room = PSRoom;
+    users = new utils.TableCache<PSUser, PSUser>(name => new PSUser(name));
+    rooms = new utils.TableCache<PSRoom>();
 
     /************************************
      * REPL tools

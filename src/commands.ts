@@ -28,8 +28,8 @@ export abstract class CommandBase {
     user: PSUser;
     target: string;
     constructor(target: string, roomid: string | null, user: string) {
-        this.user = PSUser.get(user);
-        this.room = (roomid ? PSRoom.get(roomid) : false) || null;
+        this.user = PS.users.get(user);
+        this.room = (roomid ? PS.rooms.get(roomid) : false) || null;
         this.target = target;
     }
     abstract run(): void | boolean | Promise<void | boolean>;
@@ -93,8 +93,8 @@ export abstract class FilterBase {
     room: PSRoom | null;
     constructor(message: string, userid: string, room: string | null) {
         this.message = message;
-        this.user = PSUser.get(userid);
-        this.room = PSRoom.get(room || "") || null;
+        this.user = PS.users.get(userid);
+        this.room = PS.rooms.get(room || "") || null;
     }
     abstract run(): void | boolean | Promise<void | boolean>;
     send(message: string) {

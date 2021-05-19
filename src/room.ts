@@ -11,23 +11,19 @@ const roomSettings: {
 
 export class PSRoom {
     static settingsList = roomSettings;
-    static rooms = new Map<string, PSRoom>();
-    static get(id: string) {
-        return this.rooms.get(toID(id));
-    }
     id: string;
     title: string;
     auth = new Map<string, string>();
     type = 'chat';
     visibility = 'public';
     modchat: string | null = null;
-    users = new Map<string, string>();
+    users = new Map<string, PSUser>();
     settings: {[k: string]: any};
     constructor(title: string) {
         this.title = title;
         this.id = toID(title);
         this.settings = roomSettings[this.id] || {};
-        PSRoom.rooms.set(this.id, this);
+        PS.rooms.set(this.id, this);
         void this.fetchData();
     }
     async fetchData() {
@@ -43,7 +39,7 @@ export class PSRoom {
             }
         }
         for (const identity of info.users) {
-            this.users.set(toID(identity.slice(1)), identity); // todo PSUser
+            this.users.set(toID(identity.slice(1)), PS.users.get(identity.slice(1))); // todo PSUser
         }
         for (const group in info.auth) {
             for (const id of info.auth[group]) {

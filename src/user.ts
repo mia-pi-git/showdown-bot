@@ -3,18 +3,9 @@
  */
 import {toID} from './lib/utils';
 
-export class PSUser {
-    static users = new Map<string, PSUser>();
-    static get(name: string) {
-        const id = toID(name);
-        let user = this.users.get(id);
-        if (!user) {
-            user = new PSUser(name);
-            this.users.set(id, user);
-        }
-        return user;
-    }
+const MIN_FETCH_TIME = 10 * 60 * 1000; // every 10m
 
+export class PSUser {
     name: string;
     id: string;
     group: string = ' ';
@@ -23,10 +14,10 @@ export class PSUser {
     status = '';
     rooms = new Set<string>();
     connected = false;
+    lastFetch: number | null = null;
     constructor(name: string) {
         this.name = name;
         this.id = toID(name);
-        void this.fetchData();
     }
     async fetchData() {
         const info = await PS.query('userdetails', this.id);
@@ -40,8 +31,14 @@ export class PSUser {
             }
         }
         this.rooms = new Set(Object.keys(info.rooms || {}));
+        this.lastFetch = Date.now();
     }
     send(message: string) {
+        if (this.needsFetch()) void this.fetchData();
         PS.send(`/pm ${this.id},${message}`);
+    }
+    needsFetch() {
+        if (this.lastFetch === null) return true;
+        return Date.now() - this.lastFetch > MIN_FETCH_TIME;
     }
 }

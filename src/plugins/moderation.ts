@@ -49,7 +49,7 @@ export class AutoModeration extends PS.CommandBase {
         if (!roomid && !this.room) {
             throw new PS.CommandError(`Specify a room.`);
         }
-        const room = roomid ? PS.Room.get(roomid) : this.room;
+        const room = roomid ? PS.rooms.get(roomid) : this.room;
         if (!room) {
             throw new PS.CommandError(`Invalid room.`);
         }
@@ -76,7 +76,7 @@ export class NoTolerance extends PS.CommandBase {
         this.is('@');
         if (this.room) this.room = null;
         const [roomid, name] = utils.splitFirst(this.target, ' ');
-        const room = PS.Room.get(roomid);
+        const room = PS.rooms.get(roomid);
         if (!room) throw new PS.CommandError(`Room not found.`);
         if (!room.settings.notolerance) room.settings.notolerance = [];
         const id = toID(name);
@@ -96,7 +96,7 @@ export class RemoveNoTolerance extends PS.CommandBase {
         this.is('@');
         if (this.room) this.room = null;
         const [roomid, name] = utils.splitFirst(this.target, ' ');
-        const room = PS.Room.get(roomid);
+        const room = PS.rooms.get(roomid);
         if (!room) throw new PS.CommandError(`Room not found.`);
         if (!room.settings.notolerance) {
             throw new PS.CommandError(`That room has no users on the no-tolerance list.`);
