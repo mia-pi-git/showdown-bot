@@ -149,6 +149,3 @@ PS.watchPline('N', (args) => {
     // console.log([newID, oldID]);
     altsDB.run(`REPLACE INTO alts (cur, prev) VALUES (?, ?)`, newID, oldID);
 });
-
-export const commands = {AutoModeration, NoTolerance, RemoveNoTolerance, Alts};
-export const filters = [SpamFilter];

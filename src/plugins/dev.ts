@@ -90,6 +90,3 @@ export class EvalSql extends PS.CommandBase {
         this.send(utils.visualize(result));
     }
 }
-
-export const commands = {Eval, Kill, Ping, ReloadCommands, EvalSql};
-export const filters = [];

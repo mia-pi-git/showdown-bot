@@ -31,5 +31,3 @@ export class Help extends PS.CommandBase {
     static aliases = ['guide'];
     static help = ['/help [command] - get info on the given command.'];
 }
-
-export const commands = {Help, Git};

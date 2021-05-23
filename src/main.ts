@@ -215,12 +215,21 @@ export class PSInterface {
      ************************************/
     loadPluginsFrom(path: string) {
         const imports = require(path);
-        const handlers = imports.commands;
-        for (const name in handlers) {
-            this.commands[utils.toID(name)] = handlers[name];
-        }
-        if (imports.filters) {
-            this.filters.push(...imports.filters);
+        for (const k in imports) {
+            const cur = imports[k];
+            if (Array.isArray(cur)) {
+                for (const prop of cur) {
+                    if (prop.prototype instanceof PS.FilterBase) {
+                        this.filters.push(prop);
+                    }
+                }
+            } else if (typeof cur === 'object') {
+                for (const prop in cur) {
+                    if (cur[prop].prototype instanceof PS.CommandBase) {
+                        this.commands[toID(prop)] = cur[prop];
+                    }
+                }
+            }
         }
     }
     loadPlugins() {
