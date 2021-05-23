@@ -219,13 +219,13 @@ export class PSInterface {
             const cur = imports[k];
             if (Array.isArray(cur)) {
                 for (const prop of cur) {
-                    if (prop.prototype instanceof PS.FilterBase) {
+                    if (utils.instanceOf(prop, PS.FilterBase)) {
                         this.filters.push(prop);
                     }
                 }
             } else if (typeof cur === 'object') {
                 for (const prop in cur) {
-                    if (cur[prop].prototype instanceof PS.CommandBase) {
+                    if (utils.instanceOf(cur[prop], PS.CommandBase)) {
                         this.commands[toID(prop)] = cur[prop];
                     }
                 }

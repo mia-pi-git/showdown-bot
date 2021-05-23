@@ -163,6 +163,13 @@ export function writeJSON(obj: any, path: string) {
 	fs.writeFileSync(`${__filename}/../${path}`, JSON.stringify(obj));
 }
 
+export function instanceOf(cur: any, tar: Function & {prototype: any}) {
+	if (cur.prototype) {
+		return cur.prototype instanceof tar;
+	}
+	return cur instanceof tar;
+}
+
 export {DataStream as Stream} from './streams';
 export {TableCache} from './cache';
 export {SQL} from './sqlite';
