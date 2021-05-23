@@ -165,3 +165,4 @@ export function writeJSON(obj: any, path: string) {
 
 export {DataStream as Stream} from './streams';
 export {TableCache} from './cache';
+export {SQL} from './sqlite';

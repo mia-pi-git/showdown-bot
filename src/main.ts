@@ -5,17 +5,6 @@ import {CommandBase, CommandError, FilterBase} from './commands';
 import {PSUser} from './user';
 import {PSRoom} from './room';
 
-export interface BotSettings {
-    name: string;
-    pass: string | null;
-    rooms?: string[];
-    status?: string;
-    commandToken: string;
-    loglevel?: number;
-    sysops?: string[];
-    repl?: boolean;
-}
-
 export interface PLine {
     type: string;
     args: string[];
@@ -30,7 +19,6 @@ export type BotCommand = (
 
 export class PSInterface {
     connection: PSConnection;
-    settings: BotSettings;
     curName = '';
     // these are core to functionality. do not modify them.
     // Register additional handlers with PS#watchPline
@@ -46,8 +34,8 @@ export class PSInterface {
                 console.log(`name updated to ${this.curName}`);
             }
             if (!toID(this.curName).startsWith('guest')) {
-                if (this.settings.rooms) {
-                    for (const room of this.settings.rooms) {
+                if (Config.rooms) {
+                    for (const room of Config.rooms) {
                         this.join(room);
                     }
                 }
@@ -70,7 +58,7 @@ export class PSInterface {
         },
         async pm(args) {
             const [sender, receiver, message] = args;
-            if (utils.toID(receiver) !== utils.toID(this.settings.name)) return;
+            if (utils.toID(receiver) !== utils.toID(Config.name)) return;
             this.debug(`[${new Date().toTimeString()}] Received PM from ${sender.slice(1)}: ${message}`);
             const res = await CommandBase.tryCommand(message, sender.slice(1));
             if (res === CommandBase.responses.NOT_FOUND) {
@@ -104,8 +92,7 @@ export class PSInterface {
      * Pending /crq requests.
      */
     queries = new Map<string, (data: {[k: string]: any}) => void>();
-    constructor(settings: BotSettings | string) {
-        this.settings = PSInterface.getConfig(settings);
+    constructor() {
         this.connection = new PSConnection();
         void this.listen();
         process.nextTick(() => this.loadPlugins());
@@ -129,7 +116,7 @@ export class PSInterface {
         this.connection.send(`${roomid}|${data}`);
     }
     debug(message: string) {
-        if (!this.settings.loglevel || this.settings.loglevel < 3) return;
+        if (!Config.loglevel || Config.loglevel < 3) return;
         console.log(message);
     }
     async listen() {
@@ -195,16 +182,10 @@ export class PSInterface {
         line.args = parts;
         return line as PLine;
     }
-    static getConfig(pathOrObj: BotSettings | string) {
-        if (typeof pathOrObj === 'string') {
-            return require('../' + pathOrObj);
-        }
-        return pathOrObj as BotSettings;
-    }
     async login(challstr: string, challengekeyid: number) {
         const data = await utils.post(`https://play.pokemonshowdown.com/action.php`, {
-            name: this.settings.name,
-            pass: this.settings.pass,
+            name: Config.name,
+            pass: Config.pass,
             act: 'login',
             challstr,
             challengekeyid,
@@ -219,7 +200,7 @@ export class PSInterface {
         if (data.assertion.startsWith(';;')) {
             throw new Error(data.assertion.slice(2));
         }
-        this.send(`/trn ${this.settings.name},0,${data.assertion}`);
+        this.send(`/trn ${Config.name},0,${data.assertion}`);
     }
 
     inRooms = new Set<PSRoom>();

@@ -10,11 +10,14 @@ if (!exists(`${__dirname}/../config/config.js`)) {
     copyTo(`${__dirname}/../config/config-example.js`, `${__dirname}/../config/config.js`);
 }
 
+import * as configuration from './configuration';
+global.Config = configuration.load();
+
 import {PSInterface} from './main';
 import * as utils from './lib/utils';
 
 global.utils = utils;
 global.toID = utils.toID;
 
-(global as any).PS = new PSInterface('config/config.js');
+(global as any).PS = new PSInterface();
 

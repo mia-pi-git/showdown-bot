@@ -1,11 +1,9 @@
 /**
  * Various moderation functions.
  */
-import {SQL} from '../lib/sqlite';
-
 export const messageCounts: {[roomid: string]: {[userid: string]: number}} = {};
 export const spamPunishments: {[roomid: string]: {[userid: string]: number}} = {};
-export const altsDB = SQL(`databases/alts.db`, ['databases/alts.sql']);
+export const altsDB = utils.SQL(`databases/alts.db`, ['databases/alts.sql']);
 
 export class SpamFilter extends PS.FilterBase {
     run() {

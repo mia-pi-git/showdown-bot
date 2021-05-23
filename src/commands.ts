@@ -54,14 +54,14 @@ export abstract class CommandBase {
         }
     }
     isSysop() {
-        if (!PS.settings.sysops?.includes(this.user.id)) {
+        if (!Config.sysops?.includes(this.user.id)) {
             throw new PS.CommandError(`Access denied.`);
         }
     }
 
     static responses = CommandResponses;
     static tryCommand(message: string, user: string, room?: string) {
-        if (!message.startsWith(PS.settings.commandToken)) return CommandResponses.NOT_COMMAND;
+        if (!message.startsWith(Config.commandToken)) return CommandResponses.NOT_COMMAND;
         const [rawCmd, rest] = splitFirst(message.slice(1), ' ');
         const cmd = toID(rawCmd);
         let handler = PS.commands[cmd];
@@ -105,7 +105,7 @@ export abstract class FilterBase {
         }
     }
     hasAuth() {
-        return this.room && this.room.auth.get(toID(PS.settings.name)) === '*'
+        return this.room && this.room.auth.get(toID(Config.name)) === '*'
     }
     mute(reason?: string, hour = false) {
         if (this.hasAuth()) {
