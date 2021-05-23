@@ -151,7 +151,7 @@ export async function cleanEval(code: string, evalFunct: (code: string) => any) 
 	return res;
 }
 
-export function requireJSON(requireFunction: (path: string) => any, path: string) {
+export function requireJSON(requireFunction: NodeJS.Require, path: string) {
 	try {
 		return requireFunction(path);
 	} catch (e) {

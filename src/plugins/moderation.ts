@@ -1,9 +1,11 @@
 /**
  * Various moderation functions.
  */
+import {SQL} from '../lib/sqlite';
 
 export const messageCounts: {[roomid: string]: {[userid: string]: number}} = {};
 export const spamPunishments: {[roomid: string]: {[userid: string]: number}} = {};
+export const altsDB = SQL(`databases/alts.db`, ['databases/alts.sql']);
 
 export class SpamFilter extends PS.FilterBase {
     run() {
@@ -113,5 +115,42 @@ export class RemoveNoTolerance extends PS.CommandBase {
     }
 }
 
-export const commands = {AutoModeration, NoTolerance, RemoveNoTolerance};
+export class Alts extends PS.CommandBase {
+    run() {
+        if (this.room) {
+            return this.send(`This command can only be used in PMs.`);
+        }
+        this.is('%');
+        const target = toID(this.target);
+        if (!target) {
+            return this.send(`Specify a username.`);
+        }
+        const altsList = altsDB
+            .all(`SELECT * FROM alts WHERE cur = ? OR prev = ?`, target, target)
+            .map(entry => Object.values(entry).filter(k => k !== target)[0]) as string[];
+
+        if (!altsList.length) {
+            return this.send(`No alts found for ${target}.`);
+        }
+        this.send(`${target}'s alts:`);
+        this.send(`!code ${altsList.join(', ')}`);
+    }
+}
+
+PS.watchPline('N', (args) => {
+    const [newID, oldID] = args.map(
+        // split('@') to ensure status is removed
+        i => toID(i.split('@').shift()!)
+    );
+    if (
+        newID === oldID || !(oldID && newID) || 
+        [oldID, newID].some(i => i.startsWith('guest'))
+    ) {
+        return;
+    }
+    // console.log([newID, oldID]);
+    altsDB.run(`REPLACE INTO alts (cur, prev) VALUES (?, ?)`, newID, oldID);
+});
+
+export const commands = {AutoModeration, NoTolerance, RemoveNoTolerance, Alts};
 export const filters = [SpamFilter];

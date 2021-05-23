@@ -1,8 +1,17 @@
 import {DataStream} from './lib/streams';
 
-interface PSStreamMessage {
-    type: 'open' | 'message' | 'close' | 'error';
-    data: any;
+type PSStreamMessage = {
+    type: 'open';
+    data: boolean;
+} | {
+    type: 'message';
+    data: string;
+} | {
+    type: 'close';
+    data: boolean;
+} | {
+    type: 'error';
+    data: Error;
 }
 
 export class PSConnection extends DataStream<PSStreamMessage> {
@@ -23,6 +32,7 @@ export class PSConnection extends DataStream<PSStreamMessage> {
         ws.onmessage = message => this.push({type: 'message', data: message.data});
         ws.onopen = () => this.push({type: 'open', data: true});
         ws.onclose = () => this.push({type: 'close', data: true});
+        ws.onerror = e => this.error(new Error(utils.visualize(e)));
         return ws;
     }
     destroy() {

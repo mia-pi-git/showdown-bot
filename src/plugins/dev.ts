@@ -2,6 +2,8 @@
  * Example command.
  */
 import {exec} from 'child_process';
+import {SQL} from '../lib/sqlite';
+import fs from 'fs';
 
 function bash(cmd: string) {
     return new Promise(resolve => {
@@ -62,27 +64,32 @@ class ReloadCommands extends PS.CommandBase {
     }
 }
 
-export class Help extends PS.CommandBase {
+export class EvalSql extends PS.CommandBase {
     run() {
-        let cmd;
-        const target = toID(this.target);
-        for (const [k, handler] of Object.entries(PS.commands)) {
-            if (k === target || handler.aliases.includes(target)) {
-                cmd = k;
-            }
+        const [file, query] = utils.splitFirst(this.target, ',');
+        if (!file || !fs.existsSync(`${__dirname}/../databases/${file}`)) {
+            return this.send(`Specify a valid filename to access.`);
         }
-        if (!cmd) {
-            return this.send(`Command ${target} not found.`);
-        }
-        const help = PS.commands[cmd].help;
-        if (!help) {
-            return this.send(`That command has no help info.`);
-        }
-        return this.send(`Help for ${cmd}: ` + PS.commands[cmd].help?.join(' '));
+        const db = SQL(file);
+        let result;
+		try {
+			// presume it's attempting to get data first
+			result = db.all(query);
+		} catch (err) {
+			// it's not getting data, but it might still be a valid statement - try to run instead
+			if (err.message?.includes(`Use run() instead`)) {
+				try {
+					result = db.run(query);
+				} catch (e) {
+					result = ('' + e.stack);
+				}
+			} else {
+				result = ('' + err.stack);
+			}
+		}
+        this.send(utils.visualize(result));
     }
-    static aliases = ['guide'];
-    static help = ['/help [command] - get info on the given command.'];
 }
 
-export const commands = {Eval, Kill, Ping, ReloadCommands, Help};
+export const commands = {Eval, Kill, Ping, ReloadCommands, EvalSql};
 export const filters = [];

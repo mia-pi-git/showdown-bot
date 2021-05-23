@@ -22,6 +22,8 @@ export interface PLine {
     roomid?: string;
 }
 
+export type PLineHandler = (this: PSInterface, args: string[], line: PLine) => any;
+
 export type BotCommand = (
     this: PSInterface, input: string, user: string, room: string | null, line: PLine
 ) => any;
@@ -30,7 +32,9 @@ export class PSInterface {
     connection: PSConnection;
     settings: BotSettings;
     curName = '';
-    listeners: {[type: string]: (this: PSInterface, args: string[], line: PLine) => any} = {
+    // these are core to functionality. do not modify them.
+    // Register additional handlers with PS#watchPline
+    readonly listeners: {[type: string]: PLineHandler} = {
         challstr(args) {
             const [key, challstr] = args;
             return this.login(challstr, parseInt(key));
@@ -93,6 +97,7 @@ export class PSInterface {
         },
     }
 
+    customListeners: {[k: string]: PLineHandler[]} = {}
     commands: {[k: string]: typeof CommandBase} = {};
     filters: typeof FilterBase[] = [];
     /**
@@ -104,6 +109,8 @@ export class PSInterface {
         this.connection = new PSConnection();
         void this.listen();
         process.nextTick(() => this.loadPlugins());
+        // in case this is required in and wrapped by another project
+        if (!global.PS) (global as any).PS = this;
     }
     waitingQueries: {[k: string]: [string, (data: any) => void][]} = {};
     query(type: string, data = '') {
@@ -152,12 +159,26 @@ export class PSInterface {
             }
         }
     }
+    private async runListener(handler: PLineHandler, line: PLine, isCustom = false) {
+        try {
+            await handler.call(this, line.args, line);
+        } catch (e) {
+            console.log(
+                `Err in${isCustom ? ` custom ` : ' '}` + 
+                `${line.type} handler: ${e.message} - ${line.args}`
+            );
+        }
+    }
     async handleMessage(raw: string) {
         const line = PSInterface.parseLine(raw);
-        try {
-            await this.listeners[line.type]?.call(this, line.args, line);
-        } catch (e) {
-            console.log(`Err in data handler: ${e.message} - ${raw}`);
+        if (this.listeners[line.type]) {
+            await this.runListener(this.listeners[line.type], line);
+        }
+        // re: toID, see PS#watchPline comment
+        if (this.customListeners[toID(line.type)]) {
+            for (const handler of this.customListeners[toID(line.type)]) {
+                await this.runListener(handler, line, true);
+            }
         }
     }
     static parseLine(received: string): PLine {
@@ -228,7 +249,9 @@ export class PSInterface {
             for (const file of files) {
                 this.loadPluginsFrom(`${path}/${file}`);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.log(e);
+        }
     }
     CommandBase = CommandBase;
     FilterBase = FilterBase;
@@ -237,6 +260,14 @@ export class PSInterface {
     Room = PSRoom;
     users = new utils.TableCache<PSUser, PSUser>(name => new PSUser(name));
     rooms = new utils.TableCache<PSRoom>();
+
+    watchPline(type: string, handler: PLineHandler) {
+        // to address things like |N|, |J|, and |B| that can be lowercase
+        // we toID this so that we can standardize handling / not have to duplicate code
+        type = toID(type);
+        if (!this.customListeners[type]) this.customListeners[type] = [];
+        this.customListeners[type].push(handler);
+    }
 
     /************************************
      * REPL tools

@@ -2,3 +2,4 @@
 /built/
 /config/config.js
 /tsconfig.tsbuildinfo
+/databases/*.db
