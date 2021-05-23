@@ -41,6 +41,7 @@ export class PSInterface {
                 }
             }
         },
+ 
         async 'c:'(args, line) {
             const [, identity, message] = args;
             const res = await CommandBase.tryCommand(message, identity.slice(1), line.roomid as string);
@@ -57,7 +58,8 @@ export class PSInterface {
             }
         },
         async pm(args) {
-            const [sender, receiver, message] = args;
+            const [sender, receiver, ...parts] = args;
+            const message = parts.join('|');
             if (utils.toID(receiver) !== utils.toID(Config.name)) return;
             this.debug(`[${new Date().toTimeString()}] Received PM from ${sender.slice(1)}: ${message}`);
             const res = await CommandBase.tryCommand(message, sender.slice(1));
@@ -217,18 +219,11 @@ export class PSInterface {
         const imports = require(path);
         for (const k in imports) {
             const cur = imports[k];
-            if (Array.isArray(cur)) {
-                for (const prop of cur) {
-                    if (utils.instanceOf(prop, PS.FilterBase)) {
-                        this.filters.push(prop);
-                    }
-                }
-            } else if (typeof cur === 'object') {
-                for (const prop in cur) {
-                    if (utils.instanceOf(cur[prop], PS.CommandBase)) {
-                        this.commands[toID(prop)] = cur[prop];
-                    }
-                }
+            if (cur.prototype instanceof PS.FilterBase) {
+                this.filters.push(cur);
+            }
+            if (cur.prototype instanceof PS.CommandBase) {
+                this.commands[toID(cur.name)] = cur;
             }
         }
     }
@@ -258,14 +253,12 @@ export class PSInterface {
         if (!this.customListeners[type]) this.customListeners[type] = [];
         this.customListeners[type].push(handler);
     }
-
     /************************************
      * REPL tools
     ************************************/
     eval = (cmd: string) => eval(cmd);
     repl = (() => {
-        const {repl} = require('../config/config');
-        if (repl) {
+        if (Config.repl) {
             const stream = new utils.Stream<string>({nodeStream: process.stdin});
             void (async () => {
                 for await (const line of stream) {
