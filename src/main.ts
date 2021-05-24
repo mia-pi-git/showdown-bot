@@ -217,7 +217,7 @@ export class PSInterface {
         this.inRooms.add(new PSRoom(toID(room)));
     }
     saveRooms() {
-        return utils.writeJSON([...this.inRooms], 'config/rooms.json');
+        return utils.writeJSON([...this.inRooms].map(i => i.id), 'config/rooms.json');
     }
 
     joinRooms() {
