@@ -1,7 +1,7 @@
 import {PSConnection} from './connection';
 import * as utils from './lib/utils';
 import * as fs from 'fs';
-import {CommandBase, CommandError, FilterBase} from './commands';
+import {CommandBase, CommandError, FilterBase, PageBase} from './commands';
 import {PSUser} from './user';
 import {PSRoom} from './room';
 
@@ -89,6 +89,7 @@ export class PSInterface {
 
     customListeners: {[k: string]: PLineHandler[]} = {}
     commands: {[k: string]: typeof CommandBase} = {};
+    pages: {[k: string]: typeof PageBase} = {};
     filters: typeof FilterBase[] = [];
     /**
      * Pending /crq requests.
@@ -97,7 +98,10 @@ export class PSInterface {
     constructor() {
         this.connection = new PSConnection();
         void this.listen();
-        process.nextTick(() => this.loadPlugins());
+        process.nextTick(() => {
+            this.loadPlugins();
+            require('./web');
+        });
         // in case this is required in and wrapped by another project
         if (!global.PS) (global as any).PS = this;
     }
@@ -225,6 +229,9 @@ export class PSInterface {
             if (cur.prototype instanceof PS.CommandBase) {
                 this.commands[toID(cur.name)] = cur;
             }
+            if (cur.prototype instanceof PS.PageBase) {
+                this.pages[toID(cur.name)] = cur;
+            }
         }
     }
     loadPlugins() {
@@ -240,11 +247,14 @@ export class PSInterface {
     }
     CommandBase = CommandBase;
     FilterBase = FilterBase;
+    PageBase = PageBase;
     CommandError = CommandError;
     User = PSUser;
     Room = PSRoom;
     users = new utils.TableCache<PSUser, PSUser>(name => new PSUser(name));
     rooms = new utils.TableCache<PSRoom>();
+    /** Used by misc plugins to persist over ""hotpatches"" */
+    plugins: {[k: string]: any} = {};
 
     watchPline(type: string, handler: PLineHandler) {
         // to address things like |N|, |J|, and |B| that can be lowercase

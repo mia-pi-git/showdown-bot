@@ -29,7 +29,7 @@ export class Eval extends PS.CommandBase {
     }
 }
 
-class Kill extends PS.CommandBase {
+export class Kill extends PS.CommandBase {
     async run() {
         this.isSysop();
         console.log(`${this.user.name} used /kill`);
@@ -38,17 +38,21 @@ class Kill extends PS.CommandBase {
     static aliases = ['restart'];
 }
 
-class Ping extends PS.CommandBase {
+export class Ping extends PS.CommandBase {
     async run() {
         this.send(`Pong!`);
     }
     static help = ['/ping - Ping the bot.'];
 }
 
-class ReloadCommands extends PS.CommandBase {
+export class ReloadCommands extends PS.CommandBase {
     async run() {
         this.isSysop();
         this.send(`Reloading...`);
+        delete require.cache[require.resolve('../commands')];
+        for (const key of ['CommandBase', "FilterBase"] as const) {
+            PS[key] = require('../commands')[key];
+        }
         this.clearCache();
         await bash('npx tsc');
         PS.commands = {};

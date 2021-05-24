@@ -10,6 +10,7 @@
 import {PSUser} from './user';
 import {PSRoom} from './room';
 import {splitFirst, toID} from './lib/utils';
+import type * as express from 'express';
 
 export enum CommandResponses {
     NOT_FOUND,
@@ -78,9 +79,8 @@ export abstract class CommandBase {
         return Promise.resolve(obj.init())
             .then(() => obj.run())
             .catch(e => {
-                if (e.name.endsWith('CommandError')) {
-                    return obj.send(e.message);
-                } else throw e;
+                if (e instanceof CommandError) obj.send(e.message);
+                else throw e;
             });
     }
     static help: string[] | null = null;
@@ -126,5 +126,26 @@ export abstract class FilterBase {
         if (this.hasAuth()) {
             this.send(`/mn ${target}`);
         }
+    }
+}
+
+export abstract class PageBase {
+    /** Set this to serve a specific path if you don't want it to be the same as the page name */
+    static path = '';
+    readonly req: express.Request;
+    readonly res: express.Response;
+    readonly body: any;
+    constructor(req: express.Request, res: express.Response) {
+        this.req = req;
+        this.res = res;
+        this.body = req.body;
+    }
+    /**
+     * Web JS can be used in pages, as they are presently compiled on the server then served
+     * to the user on the page.
+     */
+    abstract serve(): string | Promise<string | void> | void;
+    send(content: string) {
+        this.req.push(content);
     }
 }

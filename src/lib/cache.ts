@@ -23,5 +23,18 @@ export class TableCache<T, U = T | undefined> {
     get size() {
         return this.table.size;
     }
-    [Symbol.iterator]() { return this.table }
+    
+    [Symbol.iterator]() { return this.table[Symbol.iterator](); }
+    entries() { return this.table.entries() }
+    values() { return this.table.values() }
+
+    seek(checker: (val: T, key: string, map: this) => boolean) {
+        const table = new TableCache<T, U>(this.fallback);
+        for (const [k, v] of this) {
+            if (checker.call(this, v, k, this)) {
+                table.set(k, v);
+            }
+        }
+        return table;
+    }
 }
