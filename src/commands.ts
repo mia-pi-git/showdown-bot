@@ -84,6 +84,15 @@ export abstract class CommandBase {
                 } else throw e;
             });
     }
+    isStaff(room: PSRoom | null = null) {
+        const group = room ? room.auth.get(this.user.id) : this.user.group;
+        if (!['%', '@', '&', '#'].includes(group!)) {
+            this.accessDenied();
+        }
+    }
+    accessDenied() {
+        throw new PS.CommandError(`Access denied for that command.`);
+    }
     static help: string[] | null = null;
     static aliases: string[] = [];
 }

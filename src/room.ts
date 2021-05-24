@@ -66,4 +66,16 @@ export class PSRoom {
         if (!used) this.usedUHTML[uhtmlID] = true;
         this.send(`${cmd}${html}`);
     }
+    sendMods(html: string, rank = '%', uhtmlID: string | null = null) {
+        if (this.auth.get(toID(Config.name)) !== '*') return;
+        const cmd = uhtmlID ?
+            this.usedUHTML[uhtmlID] ? 
+                `/changerankuhtml ${rank},${uhtmlID},` : 
+                `/addrankuhtml ${rank},${uhtmlID},` :
+            `/addrankhtmlbox ${rank},`;
+        this.send(`${cmd}${html}`);
+        if (uhtmlID && !this.usedUHTML[uhtmlID]) {
+            this.usedUHTML[uhtmlID] = true;
+        }
+    }
 }

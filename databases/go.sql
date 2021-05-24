@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS go_codes (
+    id TEXT NOT NULL,
+    code TEXT NOT NULL,
+    PRIMARY KEY (id)
+);
