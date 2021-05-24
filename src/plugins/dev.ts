@@ -72,9 +72,12 @@ export class Update extends PS.CommandBase {
     async run() {
         this.isSysop();
         await bash('git stash'); // for local stuff
+        this.send(`Code stashed.`);
         await bash('git pull https://github.com/mia-pi-git/showdown-bot.git');
+        this.send('Code pulled.');
         await bash('git stash pop');
-        this.send(`Done.`);
+        this.send('Stash popped.');
+        this.send(`DONE.`);
     }
 }
 
