@@ -20,7 +20,7 @@ export const raids: {[k: string]: Raid} = (() => {
     return raidObj;
 })();
 
-export const codeDB = utils.SQL('pokemongo', ['databases/go.sql']);
+export const codeDB = utils.SQL('databases/pokemongo.db', ['databases/go.sql']);
 
 export const Manager = new class {
     displayTimer!: NodeJS.Timeout;
