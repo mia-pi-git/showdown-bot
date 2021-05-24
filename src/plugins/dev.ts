@@ -68,6 +68,16 @@ export class ReloadCommands extends PS.CommandBase {
     }
 }
 
+export class Update extends PS.CommandBase {
+    async run() {
+        this.isSysop();
+        await bash('git stash'); // for local stuff
+        await bash('git pull https://github.com/mia-pi-git/showdown-bot.git');
+        await bash('git stash pop');
+        this.send(`Done.`);
+    }
+}
+
 export class EvalSql extends PS.CommandBase {
     run() {
         const [file, query] = utils.splitFirst(this.target, ',');
