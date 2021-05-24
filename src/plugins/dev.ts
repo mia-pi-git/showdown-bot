@@ -9,10 +9,10 @@ function bash(cmd: string) {
     return new Promise(resolve => {
         exec(cmd, (err, stdout, stderr) => {
             if (err) {
-                throw new PS.CommandError(`Err in execution: ${err.message}`);
+                resolve(`Err in execution: ${err.message}`);
             }
             if (stderr) {
-                throw new PS.CommandError(`Exec resolved to stderr: ${stderr}`);
+                resolve(`Stderr: ${stderr}`);
             }
             resolve(stdout || "");
         });

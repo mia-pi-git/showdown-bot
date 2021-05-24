@@ -79,8 +79,9 @@ export abstract class CommandBase {
         return Promise.resolve(obj.init())
             .then(() => obj.run())
             .catch(e => {
-                if (e instanceof CommandError) obj.send(e.message);
-                else throw e;
+                if (e instanceof CommandError || e.name.endsWith('CommandError')) {
+                    obj.send(e.message);
+                } else throw e;
             });
     }
     static help: string[] | null = null;
