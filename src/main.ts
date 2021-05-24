@@ -207,6 +207,7 @@ export class PSInterface {
             throw new Error(data.assertion.slice(2));
         }
         this.send(`/trn ${Config.name},0,${data.assertion}`);
+        this.joinRooms();
     }
 
     inRooms = new Set<PSRoom>();
@@ -214,6 +215,16 @@ export class PSInterface {
     join(room: string) {
         this.send(`/join ${toID(room)}`);
         this.inRooms.add(new PSRoom(toID(room)));
+    }
+    saveRooms() {
+        return utils.writeJSON([...this.inRooms], 'config/rooms.json');
+    }
+
+    joinRooms() {
+        try {
+            const rooms = require('../config/rooms.json');
+            for (const room of rooms) this.join(room);
+        } catch {}
     }
 
     /************************************
