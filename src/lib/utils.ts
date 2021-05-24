@@ -160,7 +160,7 @@ export function requireJSON(requireFunction: NodeJS.Require, path: string) {
 }
 
 export function writeJSON(obj: any, path: string) {
-	fs.writeFileSync(`${__filename}/../${path}`, JSON.stringify(obj));
+	fs.writeFileSync(`${__filename}/../../${path}`, JSON.stringify(obj));
 }
 
 export function instanceOf(cur: any, tar: Function & {prototype: any}) {
