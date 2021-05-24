@@ -107,3 +107,19 @@ export class EvalSql extends PS.CommandBase {
         this.send(utils.visualize(result));
     }
 }
+
+export class Join extends PS.CommandBase {
+    async run() {
+        if (!Config.sysops?.includes(this.user.id)) {
+            return this.send(`PM Mia to have her add the bot to rooms.`);
+        }
+        const target = toID(this.target);
+        const info = await PS.query('roominfo', target);
+        if (!info) {
+            return this.send(`Room not found.`);
+        }
+        PS.join(target);
+        PS.saveRooms();
+
+    }
+}
