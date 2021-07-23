@@ -29,7 +29,7 @@ export class PSInterface {
         },
         updateuser(args) {
             const cur = this.curName.slice();
-            this.curName = utils.PSUtils.splitFirst(args[0], '@!')[0];
+            this.curName = utils.splitFirst(args[0], '@!')[0];
             if (utils.toID(cur) !== utils.toID(this.curName)) {
                 console.log(`name updated to ${this.curName}`);
             }
@@ -175,7 +175,7 @@ export class PSInterface {
         }
     }
     static parseLine(received: string): PLine {
-        let [possibleRoomid, rest] = utils.PSUtils.splitFirst(received, '\n');
+        let [possibleRoomid, rest] = utils.splitFirst(received, '\n');
         const line: Partial<PLine> = {};
         if (possibleRoomid?.startsWith('>')) {
             line.roomid = utils.toID(possibleRoomid);

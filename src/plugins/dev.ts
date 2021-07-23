@@ -2,7 +2,6 @@
  * Example command.
  */
 import {exec} from 'child_process';
-import fs from 'fs';
 
 function bash(cmd: string) {
     return new Promise(resolve => {

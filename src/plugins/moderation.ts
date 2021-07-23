@@ -1,9 +1,16 @@
 /**
  * Various moderation functions.
  */
+
+import {SQLDatabase} from '../lib/database';
+
 export const messageCounts: {[roomid: string]: {[userid: string]: number}} = {};
 export const spamPunishments: {[roomid: string]: {[userid: string]: number}} = {};
-export const altsDB = utils.SQL(`databases/alts.db`, ['databases/alts.sql']);
+export const altsDB = new SQLDatabase({
+    file: 'databases/alts.db',
+    tableName: 'alts',
+    keys: ['cur', 'prev'],
+});
 
 export class SpamFilter extends PS.FilterBase {
     run() {
@@ -45,7 +52,7 @@ export class SpamFilter extends PS.FilterBase {
 export class AutoModeration extends PS.CommandBase {
     run() {
         this.is('@');
-        let [setting, roomid] = utils.PSUtils.splitFirst(this.target, ' ').map(u => u.trim());
+        let [setting, roomid] = utils.splitFirst(this.target, ' ').map(u => u.trim());
         if (!roomid && !this.room) {
             throw new PS.CommandError(`Specify a room.`);
         }
@@ -75,7 +82,7 @@ export class NoTolerance extends PS.CommandBase {
     run() {
         this.is('@');
         if (this.room) this.room = null;
-        const [roomid, name] = utils.PSUtils.splitFirst(this.target, ' ');
+        const [roomid, name] = utils.splitFirst(this.target, ' ');
         const room = PS.rooms.get(roomid);
         if (!room) throw new PS.CommandError(`Room not found.`);
         if (!room.settings.notolerance) room.settings.notolerance = [];
@@ -95,7 +102,7 @@ export class RemoveNoTolerance extends PS.CommandBase {
     run() {
         this.is('@');
         if (this.room) this.room = null;
-        const [roomid, name] = utils.PSUtils.splitFirst(this.target, ' ');
+        const [roomid, name] = utils.splitFirst(this.target, ' ');
         const room = PS.rooms.get(roomid);
         if (!room) throw new PS.CommandError(`Room not found.`);
         if (!room.settings.notolerance) {
@@ -114,7 +121,7 @@ export class RemoveNoTolerance extends PS.CommandBase {
 }
 
 export class Alts extends PS.CommandBase {
-    run() {
+    async run() {
         if (this.room) {
             return this.send(`This command can only be used in PMs.`);
         }
@@ -123,9 +130,8 @@ export class Alts extends PS.CommandBase {
         if (!target) {
             return this.send(`Specify a username.`);
         }
-        const altsList = altsDB
-            .all(`SELECT * FROM alts WHERE cur = ? OR prev = ?`, target, target)
-            .map(entry => Object.values(entry).filter(k => k !== target)[0]) as string[];
+        let altsList = await altsDB.selectAll<any>(`*`, `cur = ? OR prev = ?`, [target, target]);
+        altsList = altsList.map(entry => Object.values(entry).filter(k => k !== target)[0]) as string[];
 
         if (!altsList.length) {
             return this.send(`No alts found for ${target}.`);
@@ -147,5 +153,5 @@ PS.watchPline('N', (args) => {
         return;
     }
     // console.log([newID, oldID]);
-    altsDB.run(`REPLACE INTO alts (cur, prev) VALUES (?, ?)`, newID, oldID);
+    void altsDB.insert([newID, oldID], true);
 });

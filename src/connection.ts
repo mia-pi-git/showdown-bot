@@ -31,7 +31,7 @@ export class PSConnection extends Streams.ObjectReadStream<PSStreamMessage> {
         ws.onmessage = message => this.push({type: 'message', data: message.data});
         ws.onopen = () => this.push({type: 'open', data: true});
         ws.onclose = () => this.push({type: 'close', data: true});
-        ws.onerror = e => this.error(new Error(utils.PSUtils.visualize(e)));
+        ws.onerror = e => this.error(new Error(utils.visualize(e)));
         return ws;
     }
     destroy() {

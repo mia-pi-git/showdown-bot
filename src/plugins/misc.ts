@@ -9,7 +9,6 @@ export class Git extends PS.CommandBase {
     static aliases = ['github', 'repo'];
 }
 
-
 export class Help extends PS.CommandBase {
     run() {
         let cmd;
