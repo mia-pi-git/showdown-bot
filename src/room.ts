@@ -2,6 +2,7 @@
  * Container around a PS room - made for easy access / messaging.
  */
 import {toID, requireJSON, writeJSON} from './lib/utils';
+import {Config} from './configuration';
 
 const roomSettings: {
     [roomid: string]: {

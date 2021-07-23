@@ -2,6 +2,7 @@ import fs from 'fs';
 
 export {TableCache} from './cache';
 export {SQLDatabase} from './database';
+import fetch from 'node-fetch';
 
 export function safeJSON(str: string) {
 	try {

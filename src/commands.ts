@@ -8,6 +8,8 @@
  * - string input, 
  */
 import {PSUser} from './user';
+import {Config} from './configuration';
+import * as utils from './lib/utils';
 import {PSRoom} from './room';
 import {toID} from './lib/utils';
 import type * as express from 'express';

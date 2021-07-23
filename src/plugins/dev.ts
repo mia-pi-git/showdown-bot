@@ -2,6 +2,9 @@
  * Example command.
  */
 import {exec} from 'child_process';
+import * as utils from '../lib/utils';
+import {toID} from '../lib/utils';
+import {Config} from '../configuration';
 
 function bash(cmd: string) {
     return new Promise(resolve => {

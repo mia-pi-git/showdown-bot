@@ -22,7 +22,9 @@ export function load(renew = false) {
     Object.assign(imports, {
         reload: () => load(true),
     });
-    if (renew) global.Config = imports;
+    if (renew) Object.assign(Config, imports);
     return imports as Configuration;
 }
+
+export const Config = load();
 

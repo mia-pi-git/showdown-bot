@@ -1,5 +1,7 @@
 import {PSConnection} from './connection';
 import * as utils from './lib/utils';
+import {toID} from './lib/utils';
+import {Config} from './configuration';
 import * as fs from 'fs';
 import {CommandBase, CommandError, FilterBase, PageBase} from './commands';
 import {PSUser} from './user';
@@ -103,7 +105,7 @@ export class PSInterface {
             require('./web');
         });
         // in case this is required in and wrapped by another project
-        if (!global.PS) (global as any).PS = this;
+        if (!(global as any).PS) (global as any).PS = this;
     }
     waitingQueries: {[k: string]: [string, (data: any) => void][]} = {};
     query(type: string, data = '') {

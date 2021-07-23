@@ -3,6 +3,8 @@
  */
 
 import {SQLDatabase} from '../lib/database';
+import * as utils from '../lib/utils';
+import {toID} from '../lib/utils';
 
 export const messageCounts: {[roomid: string]: {[userid: string]: number}} = {};
 export const spamPunishments: {[roomid: string]: {[userid: string]: number}} = {};
