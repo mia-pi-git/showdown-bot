@@ -1,8 +1,5 @@
-import axios from 'axios';
 import fs from 'fs';
 
-export * from 'pokemon-showdown/.lib-dist/utils';
-export {Streams, ProcessManager, Net, FS, Repl} from 'pokemon-showdown/.lib-dist';
 export {TableCache} from './cache';
 export {SQLDatabase} from './database';
 
@@ -15,8 +12,8 @@ export function safeJSON(str: string) {
 }
 
 export async function post(url: string, body: {[k: string]: any}, transformer?: (data: any) => any) {
-	const data = await axios.post(url, body);
-	return safeJSON(transformer ? transformer(data.data) : data.data);
+	const data = await fetch(url, body).then(res => res.text());
+	return safeJSON(transformer ? transformer(data) : data);
 }
 
 export function toID(text: any) {
@@ -70,3 +67,21 @@ export function instanceOf(cur: any, tar: Function & {prototype: any}) {
 	}
 	return cur instanceof tar;
 }
+
+export function splitFirst(str: string, delimiter: string, limit = 1) {
+	const splitStr: string[] = [];
+	while (splitStr.length < limit) {
+		const delimiterIndex = str.indexOf(delimiter);
+		if (delimiterIndex >= 0) {
+			splitStr.push(str.slice(0, delimiterIndex));
+			str = str.slice(delimiterIndex + delimiter.length);
+		} else {
+			splitStr.push(str);
+			str = '';
+		}
+	}
+	splitStr.push(str);
+	return splitStr;
+}
+
+export * as Streams from './streams';

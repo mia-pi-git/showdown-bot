@@ -96,7 +96,7 @@ export class PSInterface {
      */
     queries = new Map<string, (data: {[k: string]: any}) => void>();
     constructor() {
-        this.connection = new PSConnection();
+        this.connection = new PSConnection(Config.websocketType || require('sockjs-client'));
         void this.listen();
         process.nextTick(() => {
             this.loadPlugins();

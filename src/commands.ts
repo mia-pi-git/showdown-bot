@@ -9,7 +9,7 @@
  */
 import {PSUser} from './user';
 import {PSRoom} from './room';
-import {Utils, toID} from './lib/utils';
+import {toID} from './lib/utils';
 import type * as express from 'express';
 
 export enum CommandResponses {
@@ -63,7 +63,7 @@ export abstract class CommandBase {
     static responses = CommandResponses;
     static tryCommand(message: string, user: string, room?: string) {
         if (!message.startsWith(Config.commandToken)) return CommandResponses.NOT_COMMAND;
-        const [rawCmd, rest] = Utils.splitFirst(message.slice(1), ' ');
+        const [rawCmd, rest] = utils.splitFirst(message.slice(1), ' ');
         const cmd = toID(rawCmd);
         let handler = PS.commands[cmd];
         if (!handler) {
