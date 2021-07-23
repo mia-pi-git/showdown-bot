@@ -8,7 +8,6 @@
  * - string input, 
  */
 import {PSUser} from './user';
-import {Config} from './configuration';
 import * as utils from './lib/utils';
 import {PSRoom} from './room';
 import {toID} from './lib/utils';
@@ -57,14 +56,14 @@ export abstract class CommandBase {
         }
     }
     isSysop() {
-        if (!Config.sysops?.includes(this.user.id)) {
+        if (!PS.config.sysops?.includes(this.user.id)) {
             throw new PS.CommandError(`Access denied.`);
         }
     }
 
     static responses = CommandResponses;
     static tryCommand(message: string, user: string, room?: string) {
-        if (!message.startsWith(Config.commandToken)) return CommandResponses.NOT_COMMAND;
+        if (!message.startsWith(PS.config.commandToken)) return CommandResponses.NOT_COMMAND;
         const [rawCmd, rest] = utils.splitFirst(message.slice(1), ' ');
         const cmd = toID(rawCmd);
         let handler = PS.commands[cmd];
@@ -117,7 +116,7 @@ export abstract class FilterBase {
         }
     }
     hasAuth() {
-        return this.room && this.room.auth.get(toID(Config.name)) === '*'
+        return this.room && this.room.auth.get(toID(PS.config.name)) === '*'
     }
     mute(reason?: string, hour = false) {
         if (this.hasAuth()) {

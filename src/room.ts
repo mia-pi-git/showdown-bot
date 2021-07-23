@@ -1,14 +1,13 @@
 /**
  * Container around a PS room - made for easy access / messaging.
  */
-import {toID, requireJSON, writeJSON} from './lib/utils';
-import {Config} from './configuration';
+import {toID, requireJSON, writeJSON} from './lib/utils';;
 
 const roomSettings: {
     [roomid: string]: {
         [k: string]: any,
     }
-} = requireJSON(require, '../config/roomsettings.json');
+} = requireJSON(require, '../PS.config/roomsettings.json');
 
 export class PSRoom {
     static settingsList = roomSettings;
@@ -53,7 +52,7 @@ export class PSRoom {
     }
 
     saveSettings() {
-        writeJSON(roomSettings, 'config/roomsettings.json');
+        writeJSON(roomSettings, 'PS.config/roomsettings.json');
     }
 
     modlog(message: string) {
@@ -68,7 +67,7 @@ export class PSRoom {
         this.send(`${cmd}${html}`);
     }
     sendMods(html: string, rank = '%', uhtmlID: string | null = null) {
-        if (this.auth.get(toID(Config.name)) !== '*') return;
+        if (this.auth.get(toID(PS.config.name)) !== '*') return;
         const cmd = uhtmlID ?
             this.usedUHTML[uhtmlID] ? 
                 `/changerankuhtml ${rank},${uhtmlID},` : 

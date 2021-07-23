@@ -1,5 +1,6 @@
 /node_modules/
 /built/
 /config/config.js
-/tsconfig.tsbuildinfo
+*/tsconfig.tsbuildinfo
 /databases/*.db
+/tsconfig.tsbuildinfo

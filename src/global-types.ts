@@ -7,8 +7,6 @@ type PSUser = import('./user').PSUser;
 type CommandBase = import('./commands').CommandBase;
 type AnyObject = {[k: string]: any};
 
-namespace PS {
-    export type PLine = import('./main').PLine;
-    export type PLineHandler = import('./main').PLineHandler;
-    export type PageBase = import('./commands').PageBase;
-}
+type PLine = import('./main').PLine;
+type PLineHandler = import('./main').PLineHandler;
+type PageBase = import('./commands').PageBase;

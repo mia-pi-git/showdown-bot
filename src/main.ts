@@ -1,7 +1,6 @@
 import {PSConnection} from './connection';
 import * as utils from './lib/utils';
 import {toID} from './lib/utils';
-import {Config} from './configuration';
 import * as fs from 'fs';
 import {CommandBase, CommandError, FilterBase, PageBase} from './commands';
 import {PSUser} from './user';
@@ -24,10 +23,24 @@ export type Fetcher = (url: string, opts?: {[k: string]: any}) => Promise<{
     text: () => Promise<string>,
 }>;
 
+export interface Configuration {
+    name: string;
+    pass: string | null;
+    rooms?: string[];
+    status?: string;
+    commandToken: string;
+    loglevel?: number;
+    sysops?: string[];
+    repl?: boolean;
+    reload?: () => Configuration;
+    [k: string]: any;
+}
+
 export class PSInterface {
     connection: PSConnection;
     curName = '';
     fetch: Fetcher;
+    config: Configuration;
     // these are core to functionality. do not modify them.
     // Register additional handlers with PS#watchPline
     readonly listeners: {[type: string]: PLineHandler} = {
@@ -42,8 +55,8 @@ export class PSInterface {
                 console.log(`name updated to ${this.curName}`);
             }
             if (!toID(this.curName).startsWith('guest')) {
-                if (Config.rooms) {
-                    for (const room of Config.rooms) {
+                if (PS.config.rooms) {
+                    for (const room of PS.config.rooms) {
                         this.join(room);
                     }
                 }
@@ -68,7 +81,7 @@ export class PSInterface {
         async pm(args) {
             const [sender, receiver, ...parts] = args;
             const message = parts.join('|');
-            if (utils.toID(receiver) !== utils.toID(Config.name)) return;
+            if (utils.toID(receiver) !== utils.toID(PS.config.name)) return;
             this.debug(`[${new Date().toTimeString()}] Received PM from ${sender.slice(1)}: ${message}`);
             const res = await CommandBase.tryCommand(message, sender.slice(1));
             if (res === CommandBase.responses.NOT_FOUND) {
@@ -103,13 +116,17 @@ export class PSInterface {
      * Pending /crq requests.
      */
     queries = new Map<string, (data: {[k: string]: any}) => void>();
-    constructor( fetcher: Fetcher, websocketType?: typeof WebSocket) {
+    constructor(
+        config: Configuration,
+        fetcher: Fetcher,
+        websocketType?: typeof WebSocket
+    ) {
         this.fetch = fetcher;
+        this.config = config;
         this.connection = new PSConnection(websocketType || require('sockjs-client'));
         void this.listen();
         process.nextTick(() => {
             this.loadPlugins();
-            require('./web');
         });
         // in case this is required in and wrapped by another project
         if (!(global as any).PS) (global as any).PS = this;
@@ -131,7 +148,7 @@ export class PSInterface {
         this.connection.send(`${roomid}|${data}`);
     }
     debug(message: string) {
-        if (!Config.loglevel || Config.loglevel < 3) return;
+        if (!PS.config.loglevel || PS.config.loglevel < 3) return;
         console.log(message);
     }
     async listen() {
@@ -201,8 +218,8 @@ export class PSInterface {
         const res = await this.fetch(`https://play.pokemonshowdown.com/action.php`, {
             method: 'POST',
             body: {
-                name: Config.name,
-                pass: Config.pass,
+                name: PS.config.name,
+                pass: PS.config.pass,
                 act: 'login',
                 challstr,
                 challengekeyid,
@@ -219,7 +236,7 @@ export class PSInterface {
         if (data.assertion.startsWith(';;')) {
             throw new Error(data.assertion.slice(2));
         }
-        this.send(`/trn ${Config.name},0,${data.assertion}`);
+        this.send(`/trn ${PS.config.name},0,${data.assertion}`);
         this.joinRooms();
     }
 
@@ -230,12 +247,12 @@ export class PSInterface {
         this.inRooms.add(new PSRoom(toID(room)));
     }
     saveRooms() {
-        return utils.writeJSON([...this.inRooms].map(i => i.id), 'config/rooms.json');
+        return utils.writeJSON([...this.inRooms].map(i => i.id), 'PS.config/rooms.json');
     }
 
     joinRooms() {
         try {
-            const rooms = require('../config/rooms.json');
+            const rooms = require('../PS.config/rooms.json');
             for (const room of rooms) this.join(room);
         } catch {}
     }
@@ -292,7 +309,7 @@ export class PSInterface {
     ************************************/
     eval = (cmd: string) => eval(cmd);
     repl = (() => {
-        if (Config.repl) {
+        if (PS.config.repl) {
             const stream = new utils.Streams.ObjectReadStream<string>({
                 nodeStream: process.stdin,
             });

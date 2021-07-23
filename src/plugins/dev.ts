@@ -4,7 +4,6 @@
 import {exec} from 'child_process';
 import * as utils from '../lib/utils';
 import {toID} from '../lib/utils';
-import {Config} from '../configuration';
 
 function bash(cmd: string) {
     return new Promise(resolve => {
@@ -84,7 +83,7 @@ export class Update extends PS.CommandBase {
 
 export class Join extends PS.CommandBase {
     async run() {
-        if (!Config.sysops?.includes(this.user.id)) {
+        if (!PS.config.sysops?.includes(this.user.id)) {
             return this.send(`PM Mia to have her add the bot to rooms.`);
         }
         const target = toID(this.target);

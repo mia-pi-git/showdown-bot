@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"lib": ["es2020", "dom"],
+		"outDir": "../built",
+		"declaration": true,
+		"target": "esnext",
+		"module": "commonjs",
+        "skipLibCheck": true,
+		"moduleResolution": "node",
+		"strict": true,
+		"allowJs": true,
+		"checkJs": true,
+		"incremental": true,
+		"allowUnreachableCode": false
+	},
+	"types": ["node"],
+}
