@@ -19,9 +19,15 @@ export type BotCommand = (
     this: PSInterface, input: string, user: string, room: string | null, line: PLine
 ) => any;
 
+export type Fetcher = (url: string, opts?: {[k: string]: any}) => Promise<{
+    json: () => Promise<any>,
+    text: () => Promise<string>,
+}>;
+
 export class PSInterface {
     connection: PSConnection;
     curName = '';
+    fetch: Fetcher;
     // these are core to functionality. do not modify them.
     // Register additional handlers with PS#watchPline
     readonly listeners: {[type: string]: PLineHandler} = {
@@ -97,8 +103,9 @@ export class PSInterface {
      * Pending /crq requests.
      */
     queries = new Map<string, (data: {[k: string]: any}) => void>();
-    constructor() {
-        this.connection = new PSConnection(Config.websocketType || require('sockjs-client'));
+    constructor( fetcher: Fetcher, websocketType?: typeof WebSocket) {
+        this.fetch = fetcher;
+        this.connection = new PSConnection(websocketType || require('sockjs-client'));
         void this.listen();
         process.nextTick(() => {
             this.loadPlugins();
@@ -191,13 +198,17 @@ export class PSInterface {
         return line as PLine;
     }
     async login(challstr: string, challengekeyid: number) {
-        const data = await utils.post(`https://play.pokemonshowdown.com/action.php`, {
-            name: Config.name,
-            pass: Config.pass,
-            act: 'login',
-            challstr,
-            challengekeyid,
-        }, data => data.slice(1));
+        const res = await this.fetch(`https://play.pokemonshowdown.com/action.php`, {
+            method: 'POST',
+            body: {
+                name: Config.name,
+                pass: Config.pass,
+                act: 'login',
+                challstr,
+                challengekeyid,
+            },
+        });
+        const data = await res.text().then(r => JSON.parse(r.slice(1)));
         if (data.actionerror) {
             throw new Error(data.actionerror);
         }

@@ -10,12 +10,10 @@ if (!exists(`${__dirname}/../config/config.js`)) {
     copyTo(`${__dirname}/../config/config-example.js`, `${__dirname}/../config/config.js`);
 }
 
-import {load} from './configuration';
-import * as utils from './lib/utils';
 import {PSInterface} from './main';
 
 if (require.main === module) {
-    (global as any).PS = new PSInterface();
+    (global as any).PS = new PSInterface(require('node-fetch'));
 }
 
 export default PSInterface;
