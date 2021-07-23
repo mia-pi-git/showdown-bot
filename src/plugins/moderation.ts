@@ -45,7 +45,7 @@ export class SpamFilter extends PS.FilterBase {
 export class AutoModeration extends PS.CommandBase {
     run() {
         this.is('@');
-        let [setting, roomid] = utils.splitFirst(this.target, ' ').map(u => u.trim());
+        let [setting, roomid] = utils.PSUtils.splitFirst(this.target, ' ').map(u => u.trim());
         if (!roomid && !this.room) {
             throw new PS.CommandError(`Specify a room.`);
         }
@@ -75,7 +75,7 @@ export class NoTolerance extends PS.CommandBase {
     run() {
         this.is('@');
         if (this.room) this.room = null;
-        const [roomid, name] = utils.splitFirst(this.target, ' ');
+        const [roomid, name] = utils.PSUtils.splitFirst(this.target, ' ');
         const room = PS.rooms.get(roomid);
         if (!room) throw new PS.CommandError(`Room not found.`);
         if (!room.settings.notolerance) room.settings.notolerance = [];
@@ -95,7 +95,7 @@ export class RemoveNoTolerance extends PS.CommandBase {
     run() {
         this.is('@');
         if (this.room) this.room = null;
-        const [roomid, name] = utils.splitFirst(this.target, ' ');
+        const [roomid, name] = utils.PSUtils.splitFirst(this.target, ' ');
         const room = PS.rooms.get(roomid);
         if (!room) throw new PS.CommandError(`Room not found.`);
         if (!room.settings.notolerance) {

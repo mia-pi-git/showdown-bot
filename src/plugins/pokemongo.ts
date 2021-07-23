@@ -1,8 +1,9 @@
 /**
  * Plugin for the Pokemon Go room.
  */
-// @ts-ignore
+// ts-ignore
 import {Dex} from 'pokemon-showdown';
+import {SQLDatabase} from '../lib/database';
 
 export interface Raid {
     by: string;
@@ -20,7 +21,11 @@ export const raids: {[k: string]: Raid} = (() => {
     return raidObj;
 })();
 
-export const codeDB = utils.SQL('databases/pokemongo.db', ['databases/go.sql']);
+export const codeDB = new SQLDatabase({
+    file: 'databases/pokemongo.db',
+    tableName: '',
+    keys: [],
+});
 
 export const Manager = new class {
     displayTimer!: NodeJS.Timeout;
@@ -61,7 +66,7 @@ export const Manager = new class {
         return this.getRoom()?.settings.raidShowTime || 10 * 60 * 1000;
     }
     pendingRaids = new Map<string, Raid>();
-    requestRaid(target: string, user: PSUser) {
+    async requestRaid(target: string, user: PSUser) {
         const room = this.getRoom();
         if (!room) throw new PS.CommandError(`GO Room not found.`);
         if (this.pendingRaids.has(user.id)) throw new PS.CommandError(`You already have a raid host request pending.`);
@@ -75,7 +80,7 @@ export const Manager = new class {
         }
         const time = minutes * 60 * 1000;
 
-        const {code} = codeDB.get('SELECT code FROM go_codes WHERE id = ?', user.id) || {};
+        const {code} = await codeDB.selectOne('code', 'userid = ?', [user.id]) || {};
         if (!code) throw new PS.CommandError(`Register a friend code with ${Config.commandToken}gocode [your name], [your code].`);
         
         const raid: Raid = {
@@ -163,15 +168,17 @@ export class ApproveRaid extends PS.CommandBase {
 }
 
 export class RegisterCode extends PS.CommandBase {
-    run() {
+    async run() {
         const room = Manager.requireRoom();
         this.isStaff(room);
-        let [target, code] = utils.splitFirst(this.target, ',').map(i => i.trim());
+        let [target, code] = utils
+            .splitFirst(this.target, ',')
+            .map(i => i.trim());
         target = toID(target);
         if (!/[0-9]{4}-[0-9]{4}-[0-9]{4}/.test(code)) {
             return this.send("Invalid code.");
         }
-        codeDB.run(`REPLACE INTO go_codes (id, code) VALUES (?, ?)`, target, code);
+        await codeDB.insert([target, code], true);
         room.modlog(`${this.user.name} set ${target}'s friend code to ${code}`);
         if (!this.room || this.room.id !== room.id) this.send(`Code updated.`);
     }

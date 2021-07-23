@@ -20,4 +20,3 @@ global.utils = utils;
 global.toID = utils.toID;
 
 (global as any).PS = new PSInterface();
-

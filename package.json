@@ -6,7 +6,7 @@
     "axios": "^0.21.1",
     "better-sqlite3": "^7.4.0",
     "express": "^4.17.1",
-    "pokemon-showdown": "^0.11.5",
+    "pokemon-showdown": "^0.11.7",
     "sockjs-client": "^1.5.1",
     "typescript": "^4.2.4"
   },

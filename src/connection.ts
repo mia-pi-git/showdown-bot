@@ -1,5 +1,4 @@
-import {DataStream} from './lib/streams';
-
+import {Streams} from './lib/utils';
 type PSStreamMessage = {
     type: 'open';
     data: boolean;
@@ -14,12 +13,12 @@ type PSStreamMessage = {
     data: Error;
 }
 
-export class PSConnection extends DataStream<PSStreamMessage> {
+export class PSConnection extends Streams.ObjectReadStream<PSStreamMessage> {
     socket: WebSocket;
     url: string;
     recoverErrors: boolean;
     constructor(server = 'sim3', port = 443, recoverErrors?: boolean) {
-        super();
+        super({read() {}});
         this.url = `https://${server}.psim.us:${port}/showdown`;
         this.recoverErrors = recoverErrors || false;
         this.socket = this.open();
@@ -32,7 +31,7 @@ export class PSConnection extends DataStream<PSStreamMessage> {
         ws.onmessage = message => this.push({type: 'message', data: message.data});
         ws.onopen = () => this.push({type: 'open', data: true});
         ws.onclose = () => this.push({type: 'close', data: true});
-        ws.onerror = e => this.error(new Error(utils.visualize(e)));
+        ws.onerror = e => this.error(new Error(utils.PSUtils.visualize(e)));
         return ws;
     }
     destroy() {

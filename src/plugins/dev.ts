@@ -2,7 +2,6 @@
  * Example command.
  */
 import {exec} from 'child_process';
-import {SQL} from '../lib/sqlite';
 import fs from 'fs';
 
 function bash(cmd: string) {
@@ -81,33 +80,6 @@ export class Update extends PS.CommandBase {
     }
 }
 
-export class EvalSql extends PS.CommandBase {
-    run() {
-        const [file, query] = utils.splitFirst(this.target, ',');
-        if (!file || !fs.existsSync(`${__dirname}/../databases/${file}`)) {
-            return this.send(`Specify a valid filename to access.`);
-        }
-        const db = SQL(file);
-        let result;
-		try {
-			// presume it's attempting to get data first
-			result = db.all(query);
-		} catch (err) {
-			// it's not getting data, but it might still be a valid statement - try to run instead
-			if (err.message?.includes(`Use run() instead`)) {
-				try {
-					result = db.run(query);
-				} catch (e) {
-					result = ('' + e.stack);
-				}
-			} else {
-				result = ('' + err.stack);
-			}
-		}
-        this.send(utils.visualize(result));
-    }
-}
-
 export class Join extends PS.CommandBase {
     async run() {
         if (!Config.sysops?.includes(this.user.id)) {
@@ -120,6 +92,5 @@ export class Join extends PS.CommandBase {
         }
         PS.join(target);
         PS.saveRooms();
-
     }
 }

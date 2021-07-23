@@ -29,7 +29,7 @@ export class PSInterface {
         },
         updateuser(args) {
             const cur = this.curName.slice();
-            this.curName = utils.splitFirst(args[0], '@!')[0];
+            this.curName = utils.PSUtils.splitFirst(args[0], '@!')[0];
             if (utils.toID(cur) !== utils.toID(this.curName)) {
                 console.log(`name updated to ${this.curName}`);
             }
@@ -175,7 +175,7 @@ export class PSInterface {
         }
     }
     static parseLine(received: string): PLine {
-        let [possibleRoomid, rest] = utils.splitFirst(received, '\n');
+        let [possibleRoomid, rest] = utils.PSUtils.splitFirst(received, '\n');
         const line: Partial<PLine> = {};
         if (possibleRoomid?.startsWith('>')) {
             line.roomid = utils.toID(possibleRoomid);
@@ -280,15 +280,17 @@ export class PSInterface {
     eval = (cmd: string) => eval(cmd);
     repl = (() => {
         if (Config.repl) {
-            const stream = new utils.Stream<string>({nodeStream: process.stdin});
+            const stream = new utils.Streams.ObjectReadStream<string>({
+                nodeStream: process.stdin,
+            });
             void (async () => {
                 for await (const line of stream) {
-                    const res = await utils.cleanEval(line, code => this.eval(code));
+                    const res = await utils.cleanEval(line, code => this.eval(code.toString()));
                     console.log(`< ${res}`);
                 }
             })();
             return stream;
         }
-        return new utils.Stream<string>();
+        return new utils.Streams.ObjectReadStream<string>({read() {}});
     })();
 }

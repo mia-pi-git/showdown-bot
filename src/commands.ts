@@ -1,5 +1,5 @@
 /**
- * TODO: Each command file exports a `Handler` class (properties: static name, static? help)
+ * Each command file exports a `Handler` class (properties: static name, static? help)
  * Commands are set into the object by [handler.name (static)] = handler class;
  * when handler.name is called, instance is created with `new handler()`.
  * Arguments: 
@@ -9,7 +9,7 @@
  */
 import {PSUser} from './user';
 import {PSRoom} from './room';
-import {splitFirst, toID} from './lib/utils';
+import {Utils, toID} from './lib/utils';
 import type * as express from 'express';
 
 export enum CommandResponses {
@@ -63,7 +63,7 @@ export abstract class CommandBase {
     static responses = CommandResponses;
     static tryCommand(message: string, user: string, room?: string) {
         if (!message.startsWith(Config.commandToken)) return CommandResponses.NOT_COMMAND;
-        const [rawCmd, rest] = splitFirst(message.slice(1), ' ');
+        const [rawCmd, rest] = Utils.splitFirst(message.slice(1), ' ');
         const cmd = toID(rawCmd);
         let handler = PS.commands[cmd];
         if (!handler) {
