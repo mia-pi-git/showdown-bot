@@ -5,7 +5,6 @@ This package has one requirement for connecting to PS.
 (We used to require a HTTP fetcher, and in fact still support it, but we have a native version in src/utils, so it is not required.)
 For customizing fetch, just pass the fetcher instead of null in the second argument.
 
-
 From there, all you need to do is as follows:
 (TS)
 ```ts
