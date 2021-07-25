@@ -118,12 +118,12 @@ export class PSInterface {
     queries = new Map<string, (data: {[k: string]: any}) => void>();
     constructor(
         config: Configuration,
-        fetcher: Fetcher,
-        websocketType?: typeof WebSocket
+        fetcher: Fetcher | null,
+        websocketType: typeof WebSocket
     ) {
-        this.fetch = fetcher;
         this.config = config;
-        this.connection = new PSConnection(websocketType || require('sockjs-client'));
+        this.fetch = fetcher || utils.request;
+        this.connection = new PSConnection(websocketType);
         void this.listen();
         process.nextTick(() => {
             this.loadPlugins();

@@ -2,6 +2,8 @@ import * as fs from 'fs';
 
 export {TableCache} from './cache';
 export {SQLDatabase} from './database';
+import * as https from 'https';
+import * as http from 'http';
 import fetch from 'node-fetch';
 
 export function safeJSON(str: string) {
@@ -86,3 +88,31 @@ export function splitFirst(str: string, delimiter: string, limit = 1) {
 }
 
 export * as Streams from './streams';
+
+export interface FetchResult {
+	text: () => Promise<string>;
+	json: () => Promise<any>;
+	status?: number;
+	headers?: AnyObject
+}
+
+export function request(url: string, options: AnyObject = {}) {
+	const mod = url.includes('https://') ? https : http;
+	return new Promise<FetchResult>((resolve, reject) => {
+		mod.request(url, options, res => {
+			if (!res.statusCode || !(res.statusCode >= 200 && res.statusCode < 300)) return reject(new Error(`Not found.`));
+			const data: string[] = [];
+			res.setEncoding('utf8');
+			res.on('data', chunk => data.push(chunk));
+			res.on('end', () => {
+				const body = data.join('');
+				resolve({
+					text: () => Promise.resolve(body),
+					json: () => Promise.resolve(JSON.parse(body)),
+					status: res.statusCode,
+					headers: res.headers,
+				});
+			});
+		}).on('error', reject).setTimeout(5000).end();
+	});
+}
