@@ -186,6 +186,7 @@ export class PSInterface {
                 `Err in${isCustom ? ` custom ` : ' '}` + 
                 `${line.type} handler: ${e.message} - ${line.args}`
             );
+            console.log(e.stack);
         }
     }
     async handleMessage(raw: string) {
@@ -261,6 +262,7 @@ export class PSInterface {
      * Plugin stuff
      ************************************/
     loadPluginsFrom(path: string) {
+        if (path.endsWith('.d.ts')) return;
         const imports = require(path);
         for (const k in imports) {
             const cur = imports[k];
@@ -309,7 +311,7 @@ export class PSInterface {
     ************************************/
     eval = (cmd: string) => eval(cmd);
     repl = (() => {
-        if (PS.config.repl) {
+        if (this.config?.repl) {
             const stream = new utils.Streams.ObjectReadStream<string>({
                 nodeStream: process.stdin,
             });
