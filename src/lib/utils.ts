@@ -5,6 +5,7 @@ export {SQLDatabase} from './database';
 import * as https from 'https';
 import * as http from 'http';
 import fetch from 'node-fetch';
+import * as url from 'url';
 
 export function safeJSON(str: string) {
 	try {
@@ -96,23 +97,86 @@ export interface FetchResult {
 	headers?: AnyObject
 }
 
-export function request(url: string, options: AnyObject = {}) {
-	const mod = url.includes('https://') ? https : http;
+export function request(uri: string, opts: AnyObject = {}) {
 	return new Promise<FetchResult>((resolve, reject) => {
-		mod.request(url, options, res => {
-			if (!res.statusCode || !(res.statusCode >= 200 && res.statusCode < 300)) return reject(new Error(`Not found.`));
-			const data: string[] = [];
-			res.setEncoding('utf8');
-			res.on('data', chunk => data.push(chunk));
-			res.on('end', () => {
-				const body = data.join('');
+		if (!opts) opts = {};
+		let body = opts.body;
+		if (body && typeof body !== 'string') {
+		if (!opts.headers) opts.headers = {};
+		if (!opts.headers['Content-Type']) {
+			opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+		}
+		body = encodeQuery(body);
+	}
+
+	if (opts.query) {
+		uri += (uri.includes('?') ? '&' : '?') + encodeQuery(opts.query);
+	}
+
+		if (body) {
+			if (!opts.headers) opts.headers = {};
+			if (!opts.headers['Content-Length']) {
+				opts.headers['Content-Length'] = Buffer.byteLength(body);
+			}
+		}
+
+		const protocol = url.parse(uri).protocol as string;
+		const net = protocol === 'https:' ? https : http;
+
+		let resolveResponse: ((value: http.IncomingMessage | null) => void) | null;
+
+		const result: string[] = [];
+		const request = net.request(uri, opts, response => {
+
+			response.setEncoding('utf-8');
+			resolveResponse!(response);
+			resolveResponse = null;
+
+			response.on('data', data => {
+				result.push(data);
+			});
+			response.on('end', () => {
 				resolve({
-					text: () => Promise.resolve(body),
-					json: () => Promise.resolve(JSON.parse(body)),
-					status: res.statusCode,
-					headers: res.headers,
+					text: () => Promise.resolve(result.join('')),
+					json: () => Promise.resolve(JSON.parse(result.join(''))),
+					headers: response.headers,
+					status: response.statusCode,
 				});
 			});
-		}).on('error', reject).setTimeout(5000).end();
+		});
+		request.on('close', () => {
+			resolve({
+				text: () => Promise.resolve(result.join('')),
+				json: () => Promise.resolve(JSON.parse(result.join(''))),
+			});
+		});
+		request.on('error', error => {
+			reject(error);
+		});
+		if (opts.timeout || opts.timeout === undefined) {
+			request.setTimeout(opts.timeout || 5000, () => {
+				reject(new Error("Request timeout"));
+				request.abort();
+			});
+		}
+
+		if (body) {
+			request.write(body);
+			request.end();
+			if (opts.writable) {
+				throw new Error(`options.body is what you would have written to a NetStream - you must choose one or the other`);
+			}
+		} else {
+			request.end();
+		}
 	});
+}
+
+function encodeQuery(data: AnyObject) {
+	let out = '';
+	for (const key in data) {
+		if (out) out += `&`;
+		out += `${key}=${encodeURIComponent('' + data[key])}`;
+	}
+	return out;
 }
