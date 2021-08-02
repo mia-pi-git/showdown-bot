@@ -7,7 +7,7 @@ const roomSettings: {
     [roomid: string]: {
         [k: string]: any,
     }
-} = requireJSON(require, '../PS.config/roomsettings.json');
+} = requireJSON(require, '../config/roomsettings.json');
 
 export class PSRoom {
     static settingsList = roomSettings;

@@ -6,7 +6,7 @@ import {toID} from '../lib/utils';
 
 export class Git extends PS.CommandBase {
     run() {
-        return this.send(`Bot repo: https://github.com/mia-pi-git/showdown-bot`);
+        return this.send(`Bot repo: ${PS.config.repo || 'https://github.com/mia-pi-git/showdown-bot'}`);
     }
     static aliases = ['github', 'repo'];
 }

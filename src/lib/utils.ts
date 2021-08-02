@@ -46,7 +46,7 @@ export async function cleanEval(code: string, evalFunct: (code: string) => any) 
 	let res;
     try {
         res = await makeAsyncEval(evalFunct)(code);
-        res = require('pokemon-showdown/.lib-dist').Utils.visualize(res);
+        res = require('util').inspect(res);
     } catch (e) {
         res = e.stack;
     }

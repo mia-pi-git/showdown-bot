@@ -84,7 +84,8 @@ export class Update extends PS.CommandBase {
 export class Join extends PS.CommandBase {
     async run() {
         if (!PS.config.sysops?.includes(this.user.id)) {
-            return this.send(`PM Mia to have her add the bot to rooms.`);
+            this.send(`PM one of the bot sysops to have them add this bot to rooms.`);
+            return this.send(`Sysops: ${PS.config.sysops?.join(', ') || "Mia"}`);
         }
         const target = toID(this.target);
         const info = await PS.query('roominfo', target);

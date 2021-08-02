@@ -116,11 +116,15 @@ export class PSInterface {
      * Pending /crq requests.
      */
     queries = new Map<string, (data: {[k: string]: any}) => void>();
+    /** Config can be an absolute path pointing to a file with config settings. */
     constructor(
-        config: Configuration,
+        config: Configuration | string,
         fetcher: Fetcher | null,
         websocketType: typeof WebSocket
     ) {
+        if (typeof config === 'string') {
+            config = require(config) as Configuration;
+        }
         this.config = config;
         this.fetch = fetcher || utils.request;
         this.connection = new PSConnection(websocketType);
@@ -248,12 +252,12 @@ export class PSInterface {
         this.inRooms.add(new PSRoom(toID(room)));
     }
     saveRooms() {
-        return utils.writeJSON([...this.inRooms].map(i => i.id), 'PS.config/rooms.json');
+        return utils.writeJSON([...this.inRooms].map(i => i.id), 'config/rooms.json');
     }
 
     joinRooms() {
         try {
-            const rooms = require('../PS.config/rooms.json');
+            const rooms = require('../config/rooms.json');
             for (const room of rooms) this.join(room);
         } catch {}
     }
@@ -306,23 +310,5 @@ export class PSInterface {
         if (!this.customListeners[type]) this.customListeners[type] = [];
         this.customListeners[type].push(handler);
     }
-    /************************************
-     * REPL tools
-    ************************************/
     eval = (cmd: string) => eval(cmd);
-    repl = (() => {
-        if (this.config?.repl) {
-            const stream = new utils.Streams.ObjectReadStream<string>({
-                nodeStream: process.stdin,
-            });
-            void (async () => {
-                for await (const line of stream) {
-                    const res = await utils.cleanEval(line, code => this.eval(code.toString()));
-                    console.log(`< ${res}`);
-                }
-            })();
-            return stream;
-        }
-        return new utils.Streams.ObjectReadStream<string>({read() {}});
-    })();
 }
