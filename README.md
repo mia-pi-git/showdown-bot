@@ -1,5 +1,7 @@
 **A simple, easily customizable bot for connecting to Pokemon Showdown.**
 
+**THIS PACKAGE IS DEPRECATED: USE https://npmjs.com/package/psim.us instead**
+
 This package has one requirement for connecting to PS.
 - A WebSocket instance (we recommend sockjs-client or WebSocket.)
 (We used to require a HTTP fetcher, and in fact still support it, but we have a native version in src/utils, so it is not required.)
