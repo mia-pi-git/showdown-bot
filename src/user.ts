@@ -1,44 +1,75 @@
 /**
- * Wrapper around PS users.
+ * User handling.
  */
-import {toID} from './lib/utils';
 
-const MIN_FETCH_TIME = 10 * 60 * 1000; // every 10m
+import {PSSendable} from './sendable';
+import {Client} from './ps';
+import {toID} from './lib';
 
-export class PSUser {
-    name: string;
-    id: string;
-    group: string = ' ';
-    avatar: string | number = 0;
-    autoconfirmed = false;
-    status = '';
-    rooms = new Set<string>();
-    connected = false;
-    lastFetch: number | null = null;
-    constructor(name: string) {
-        this.name = name;
-        this.id = toID(name);
-    }
-    async fetchData() {
-        const info = await PS.query('userdetails', this.id);
-        if (!info) {
-            return;
-        }
-        if (!this.connected) this.connected = true;
-        for (const prop of ['id', 'name', 'avatar', 'group', 'autoconfirmed', 'status'] as const) {
-            if (prop in info && info[prop] !== this[prop]) {
-                this[prop] = info[prop] as never;
+export class User extends PSSendable {
+    data: Record<string, any> = {};
+    group = '';
+    rooms: Record<string, {group: string, isPrivate?: boolean}> = {};
+    name = '';
+    avatar = '';
+    setData(data: any) {
+        Object.assign(this.data, data);
+        if (data.group) this.group = data.group;
+        if (data.name) this.name = data.name;
+        if (data.id) this.id = data.id;
+        if (data.avatar) this.avatar = data.avatar;
+        if (data.rooms) {
+            for (const roomWithRank in data.rooms) {
+                let id, group;
+                if (toID(roomWithRank) !== roomWithRank) {
+                    group = roomWithRank.charAt(0);
+                    id = toID(roomWithRank);
+                } else {
+                    id = toID(roomWithRank);
+                    group = '';
+                }
+                this.rooms[id] = {
+                    isPrivate: data.rooms[roomWithRank].isPrivate,
+                    group,
+                }
             }
         }
-        this.rooms = new Set(Object.keys(info.rooms || {}));
-        this.lastFetch = Date.now();
     }
     send(message: string) {
-        if (this.needsFetch()) void this.fetchData();
-        PS.send(`/pm ${this.id},${message}`);
+        return this.client.send(`|/pm ${this.id},${message}`);
     }
-    needsFetch() {
-        if (this.lastFetch === null) return true;
-        return Date.now() - this.lastFetch > MIN_FETCH_TIME;
+    async update() {
+        try {
+            if (!this.id) throw new Error();
+            const data = await this.client.query('userdetails', [this.id]);
+            if (data.rooms === false) return false;
+            this.setData(data);
+        } catch {
+            return false;
+        }
+        return true;
     }
+    toString() { return this.id; }
+}
+
+export class UserList {
+    users = new Map<string, User>();
+    constructor(private client: Client) {}
+    async get(id: string) {
+        id = toID(id);
+        let user = this.users.get(id);
+        if (user) return user;
+        try {
+            const data = await this.client.query('userdetails', [id]);
+            if (data.rooms === false) {
+                throw new Error("User offline");
+            }
+            user = new User(this.client);
+            user.setData(data);
+            this.users.set(id, user);
+            return user;
+        } catch {
+            return null;         
+        }
+    } 
 }

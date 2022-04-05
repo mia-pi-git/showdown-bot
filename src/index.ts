@@ -1,8 +1,7 @@
-import {PSInterface} from './main';
+/**
+ * Exports!
+ */
 
-export default PSInterface;
-export * from './main';
+export * from './ps';
 export * from './room';
 export * from './user';
-export * from './connection';
-export * from './commands';

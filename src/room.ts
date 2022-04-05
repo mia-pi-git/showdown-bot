@@ -1,70 +1,53 @@
 /**
- * Container around a PS room - made for easy access / messaging.
+ * Room handling.
  */
-import {toID} from './lib/utils';;
 
-export class PSRoom {
-    id: string;
-    title: string;
-    auth = new Map<string, string>();
-    type = 'chat';
-    visibility = 'public';
-    modchat: string | null = null;
-    users = new Map<string, PSUser>();
-    settings: {[k: string]: any};
-    constructor(title: string) {
-        this.title = title;
-        this.id = toID(title);
-        this.settings = {};
-        PS.rooms.set(this.id, this);
-        void this.fetchData();
+import {PSSendable} from './sendable';
+import {Client} from './ps';
+import {User} from './user';
+
+export class Room extends PSSendable {
+    data: Record<string, any> = {};
+    id = '';
+    title = '';
+    users: Record<string, User> = {};
+    auth: Record<string, string[]> = {};
+    setData(data: any) {
+        Object.assign(this.data, data);
+        if (data.roomid) this.id = data.roomid;
+        if (data.title) this.title = data.title;
+        if (data.auth) this.auth = data.auth;
     }
-    async fetchData() {
-        const info = await PS.query('roominfo', this.id);
-        if (!info) {
-            return;
+    async update() {
+        try {
+            if (!this.id) throw new Error();
+            const data = await this.client.query('roominfo', [this.id]);
+            this.setData(data);
+        } catch {
+            return false;
         }
-        this.title = info.title;
-        this.id = toID(this.title);
-        for (const prop of ['type', 'visibility', 'modchat'] as const) {
-            if (prop in info && this[prop] !== info[prop]) {
-                this[prop] = info[prop];
-            }
-        }
-        for (const identity of info.users) {
-            this.users.set(toID(identity.slice(1)), PS.users.get(identity.slice(1))); // todo PSUser
-        }
-        for (const group in info.auth) {
-            for (const id of info.auth[group]) {
-                this.auth.set(id, group);
-            }
-        }
+        return true;
     }
     send(message: string) {
-        PS.send(message, this.id);
+        this.client.send(`${this.id}|${message}`);
     }
+    toString() { return this.id; }
+}
 
-    modlog(message: string) {
-        this.send(`/mn ${message}`);
-    }
-
-    private usedUHTML: {[k: string]: boolean} = {};
-    addHTML(html: string, uhtmlID: string) {
-        const used = !!this.usedUHTML[uhtmlID];
-        const cmd = used ? `/changeuhtml ${uhtmlID},` : `/adduhtml ${uhtmlID},`;
-        if (!used) this.usedUHTML[uhtmlID] = true;
-        this.send(`${cmd}${html}`);
-    }
-    sendMods(html: string, rank = '%', uhtmlID: string | null = null) {
-        if (this.auth.get(toID(PS.config.name)) !== '*') return;
-        const cmd = uhtmlID ?
-            this.usedUHTML[uhtmlID] ? 
-                `/changerankuhtml ${rank},${uhtmlID},` : 
-                `/addrankuhtml ${rank},${uhtmlID},` :
-            `/addrankhtmlbox ${rank},`;
-        this.send(`${cmd}${html}`);
-        if (uhtmlID && !this.usedUHTML[uhtmlID]) {
-            this.usedUHTML[uhtmlID] = true;
+export class RoomList {
+    private rooms = new Map<string, Room>();
+    constructor(private client: Client) {}
+    async get(id: string) {
+        let room = this.rooms.get(id);
+        if (room) return room;
+        try {
+            const data = await this.client.query('roominfo', [id]);
+            room = new Room(this.client);
+            room.setData(data);
+            this.rooms.set(room.id, room);
+            return room;
+        } catch {
+            return null;
         }
     }
 }
