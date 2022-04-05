@@ -4,20 +4,16 @@ export {TableCache} from './cache';
 export {SQLDatabase} from './database';
 import * as https from 'https';
 import * as http from 'http';
-import fetch from 'node-fetch';
 import * as url from 'url';
+
+export {Net} from './net';
 
 export function safeJSON(str: string) {
 	try {
 		return JSON.parse(str);
-	} catch (e) {
+	} catch {
 		return str;
 	}
-}
-
-export async function post(url: string, body: {[k: string]: any}, transformer?: (data: any) => any) {
-	const data = await fetch(url, body).then(res => res.text());
-	return safeJSON(transformer ? transformer(data) : data);
 }
 
 export function toID(text: any) {
@@ -47,7 +43,7 @@ export async function cleanEval(code: string, evalFunct: (code: string) => any) 
     try {
         res = await makeAsyncEval(evalFunct)(code);
         res = require('util').inspect(res);
-    } catch (e) {
+    } catch (e: any) {
         res = e.stack;
     }
 	return res;
@@ -56,7 +52,7 @@ export async function cleanEval(code: string, evalFunct: (code: string) => any) 
 export function requireJSON(requireFunction: NodeJS.Require, path: string) {
 	try {
 		return requireFunction(path);
-	} catch (e) {
+	} catch {
 		return {};
 	}
 }

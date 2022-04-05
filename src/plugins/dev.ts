@@ -93,6 +93,5 @@ export class Join extends PS.CommandBase {
             return this.send(`Room not found.`);
         }
         PS.join(target);
-        PS.saveRooms();
     }
 }

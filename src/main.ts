@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import {CommandBase, CommandError, FilterBase, PageBase} from './commands';
 import {PSUser} from './user';
 import {PSRoom} from './room';
+import fetch from 'node-fetch'; // ugh
 
 export interface PLine {
     type: string;
@@ -12,7 +13,9 @@ export interface PLine {
     roomid?: string;
 }
 
-export type PLineHandler = (this: PSInterface, args: string[], line: PLine) => any;
+export type PLineHandler = ((
+    this: PSInterface, args: string[], line: PLine
+) => any) & {isOnce?: boolean};
 
 export type BotCommand = (
     this: PSInterface, input: string, user: string, room: string | null, line: PLine
@@ -31,6 +34,7 @@ export interface Configuration {
     commandToken: string;
     loglevel?: number;
     sysops?: string[];
+    avatar?: string | number;
     repl?: boolean;
     reload?: () => Configuration;
     [k: string]: any;
@@ -39,7 +43,7 @@ export interface Configuration {
 export class PSInterface {
     connection: PSConnection;
     curName = '';
-    fetch: Fetcher;
+    fetch: typeof fetch;
     config: Configuration;
     // these are core to functionality. do not modify them.
     // Register additional handlers with PS#watchPline
@@ -55,9 +59,16 @@ export class PSInterface {
                 console.log(`name updated to ${this.curName}`);
             }
             if (!toID(this.curName).startsWith('guest')) {
-                if (PS.config.rooms) {
-                    for (const room of PS.config.rooms) {
-                        this.join(room);
+                if (!this.named) {
+                    this.named = true;
+                    if (this.config.rooms?.length) {
+                        this.send(`/autojoin ${this.config.rooms.join(', ')}`);
+                    }
+                    if (this.config.status) {
+                        this.send(`/status ${this.config.status}`);
+                    }
+                    if (this.config.avatar) {
+                        this.send(`/avatar ${this.config.avatar}`);
                     }
                 }
             }
@@ -81,11 +92,30 @@ export class PSInterface {
         async pm(args) {
             const [sender, receiver, ...parts] = args;
             const message = parts.join('|');
-            if (utils.toID(receiver) !== utils.toID(PS.config.name)) return;
+            if (utils.toID(receiver) !== utils.toID(this.config.name)) return;
             this.debug(`[${new Date().toTimeString()}] Received PM from ${sender.slice(1)}: ${message}`);
             const res = await CommandBase.tryCommand(message, sender.slice(1));
             if (res === CommandBase.responses.NOT_FOUND) {
                 this.send(`/pm ${sender},Command not found.`);
+            }
+        },
+        title(args) {
+            for (const [i, join] of this.roomJoins.entries()) {
+                if (toID(join[0]) === toID(args[0])) {
+                    join[1]();
+                    this.roomJoins.splice(i, 1);
+                }
+            }
+        },
+        noinit(args, line) {
+            const room = /"([^"]+)"/.exec(args[1])?.[1];
+            if (!room) return;
+            for (const [i, join] of this.roomJoins.entries()) {
+                if (toID(join[0]) === toID(room)) {
+                    this.roomJoins.splice(i, 1);
+                    join[2](new Error(args[1]));
+                    break;
+                }
             }
         },
         queryresponse(args, line) {
@@ -106,10 +136,11 @@ export class PSInterface {
                 }
             }
         },
-    }
+    };
 
     customListeners: {[k: string]: PLineHandler[]} = {}
     commands: {[k: string]: typeof CommandBase} = {};
+    named = false;
     pages: {[k: string]: typeof PageBase} = {};
     filters: typeof FilterBase[] = [];
     /**
@@ -126,7 +157,7 @@ export class PSInterface {
             config = require(config) as Configuration;
         }
         this.config = config;
-        this.fetch = fetcher || utils.request;
+        this.fetch = fetch;
         this.connection = new PSConnection(websocketType);
         void this.listen();
         process.nextTick(() => {
@@ -152,7 +183,7 @@ export class PSInterface {
         this.connection.send(`${roomid}|${data}`);
     }
     debug(message: string) {
-        if (!PS.config.loglevel || PS.config.loglevel < 3) return;
+        if (!this.config.loglevel || this.config.loglevel < 3) return;
         console.log(message);
     }
     async listen() {
@@ -185,7 +216,7 @@ export class PSInterface {
     private async runListener(handler: PLineHandler, line: PLine, isCustom = false) {
         try {
             await handler.call(this, line.args, line);
-        } catch (e) {
+        } catch (e: any) {
             console.log(
                 `Err in${isCustom ? ` custom ` : ' '}` + 
                 `${line.type} handler: ${e.message} - ${line.args}`
@@ -194,43 +225,57 @@ export class PSInterface {
         }
     }
     async handleMessage(raw: string) {
-        const line = PSInterface.parseLine(raw);
+        const lines = PSInterface.parseChunk(raw);
+        for (const line of lines) {
+            await this.handleLine(line);
+        }
+    }
+    async handleLine(line: PLine) {
         if (this.listeners[line.type]) {
             await this.runListener(this.listeners[line.type], line);
         }
         // re: toID, see PS#watchPline comment
-        if (this.customListeners[toID(line.type)]) {
-            for (const handler of this.customListeners[toID(line.type)]) {
+        const type = toID(line.type);
+        if (this.customListeners[type]?.length) {
+            for (const [i, handler] of this.customListeners[type].entries()) {
                 await this.runListener(handler, line, true);
+                if (handler.isOnce) {
+                    this.customListeners[type].splice(i, 1);
+                }
             }
         }
     }
-    static parseLine(received: string): PLine {
+    static parseChunk(received: string): PLine[] {
+        const out: PLine[] = [];
         let [possibleRoomid, rest] = utils.splitFirst(received, '\n');
-        const line: Partial<PLine> = {};
+        let roomid;
         if (possibleRoomid?.startsWith('>')) {
-            line.roomid = utils.toID(possibleRoomid);
+            roomid = utils.toID(possibleRoomid);
         } else {
             rest = received;
         }
-        const parts = rest.split('|');
-        parts.shift(); // always '';
-        line.type = parts.shift() as string;
-        line.args = parts;
-        return line as PLine;
+        const chunks = rest.split('\n');
+        for (const chunk of chunks) {
+            const [, type, ...args] = chunk.split('|');
+            out.push({
+                type,
+                args,
+                roomid,
+            });
+        }
+        return out;
     }
     async login(challstr: string, challengekeyid: number) {
-        const res = await this.fetch(`https://play.pokemonshowdown.com/action.php`, {
-            method: 'POST',
+        const res = await utils.Net(`https://play.pokemonshowdown.com/action.php`).post({
             body: {
-                name: PS.config.name,
-                pass: PS.config.pass,
+                name: this.config.name,
+                pass: this.config.pass || "",
                 act: 'login',
                 challstr,
-                challengekeyid,
+                challengekeyid: `${challengekeyid}`,
             },
         });
-        const data = await res.text().then(r => JSON.parse(r.slice(1)));
+        const data = JSON.parse(res.slice(1));
         if (data.actionerror) {
             throw new Error(data.actionerror);
         }
@@ -241,27 +286,19 @@ export class PSInterface {
         if (data.assertion.startsWith(';;')) {
             throw new Error(data.assertion.slice(2));
         }
-        this.send(`/trn ${PS.config.name},0,${data.assertion}`);
-        this.joinRooms();
+        this.send(`/trn ${this.config.name},0,${data.assertion}`);
     }
 
     inRooms = new Set<PSRoom>();
+    roomJoins: [string, (data: void) => void, (err?: any) => void][] = [];
 
     join(room: string) {
-        this.send(`/join ${toID(room)}`);
+        this.send(`/join ${room}`);
         this.inRooms.add(new PSRoom(toID(room)));
+        return new Promise<void>((resolve, reject) => {
+            this.roomJoins.push([room, resolve, reject]);
+        });
     }
-    saveRooms() {
-        return utils.writeJSON([...this.inRooms].map(i => i.id), 'config/rooms.json');
-    }
-
-    joinRooms() {
-        try {
-            const rooms = require('../config/rooms.json');
-            for (const room of rooms) this.join(room);
-        } catch {}
-    }
-
     /************************************
      * Plugin stuff
      ************************************/
@@ -270,13 +307,13 @@ export class PSInterface {
         const imports = require(path);
         for (const k in imports) {
             const cur = imports[k];
-            if (cur.prototype instanceof PS.FilterBase) {
+            if (cur.prototype instanceof this.FilterBase) {
                 this.filters.push(cur);
             }
-            if (cur.prototype instanceof PS.CommandBase) {
+            if (cur.prototype instanceof this.CommandBase) {
                 this.commands[toID(cur.name)] = cur;
             }
-            if (cur.prototype instanceof PS.PageBase) {
+            if (cur.prototype instanceof this.PageBase) {
                 this.pages[toID(cur.name)] = cur;
             }
         }
@@ -288,7 +325,7 @@ export class PSInterface {
             for (const file of files) {
                 this.loadPluginsFrom(`${path}/${file}`);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.log(e);
         }
     }
@@ -309,6 +346,13 @@ export class PSInterface {
         type = toID(type);
         if (!this.customListeners[type]) this.customListeners[type] = [];
         this.customListeners[type].push(handler);
+    }
+    on(type: string, handler: PLineHandler) {
+        this.watchPline(type, handler);
+    }
+    once(type: string, handler: PLineHandler) {
+        handler.isOnce = true;
+        this.watchPline(type, handler);
     }
     eval = (cmd: string) => eval(cmd);
 }

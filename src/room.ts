@@ -1,16 +1,9 @@
 /**
  * Container around a PS room - made for easy access / messaging.
  */
-import {toID, requireJSON, writeJSON} from './lib/utils';;
-
-const roomSettings: {
-    [roomid: string]: {
-        [k: string]: any,
-    }
-} = requireJSON(require, '../config/roomsettings.json');
+import {toID} from './lib/utils';;
 
 export class PSRoom {
-    static settingsList = roomSettings;
     id: string;
     title: string;
     auth = new Map<string, string>();
@@ -22,7 +15,7 @@ export class PSRoom {
     constructor(title: string) {
         this.title = title;
         this.id = toID(title);
-        this.settings = roomSettings[this.id] || {};
+        this.settings = {};
         PS.rooms.set(this.id, this);
         void this.fetchData();
     }
@@ -49,10 +42,6 @@ export class PSRoom {
     }
     send(message: string) {
         PS.send(message, this.id);
-    }
-
-    saveSettings() {
-        writeJSON(roomSettings, 'PS.config/roomsettings.json');
     }
 
     modlog(message: string) {

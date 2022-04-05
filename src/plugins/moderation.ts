@@ -69,13 +69,11 @@ export class AutoModeration extends PS.CommandBase {
                     throw new PS.CommandError(`Spam filter not enabled for that room.`);
                 }
                 delete room.settings.spamFilterLimit;
-                room.saveSettings();
                 return this.send(`Disabled spamfilter for ${room.title}`);
             }
             throw new PS.CommandError(`Invalid setting - ${setting}. Must be a number or 'off'.`);
         }
         room.settings.spamFilterLimit = num;
-        room.saveSettings();
         this.send(`Set spam filter limit for ${room.title} to ${num}.`);
     }
 }
@@ -94,7 +92,6 @@ export class NoTolerance extends PS.CommandBase {
             throw new PS.CommandError(`User already on the notol list for that room.`);
         }
         room.settings.notolerance.push(id);
-        room.saveSettings();
         room.modlog(`${this.user.name} added ${id} to the no-tol list.`);
         this.send(`Added user to no-tol list.`);
     }
@@ -116,7 +113,6 @@ export class RemoveNoTolerance extends PS.CommandBase {
             throw new PS.CommandError(`User not on the notol list for that room.`);
         }
         room.settings.notolerance.splice(idx, 1);
-        room.saveSettings();
         room.modlog(`${this.user.name} removed ${id} from the no-tolerance list.`);
         this.send(`Removed user from no-tol list.`);
     }
