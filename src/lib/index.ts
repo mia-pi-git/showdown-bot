@@ -1,12 +1,24 @@
 import * as fs from 'fs';
 
-export {TableCache} from './cache';
-export {SQLDatabase} from './database';
 import * as https from 'https';
 import * as http from 'http';
 import * as url from 'url';
 
 export {Net} from './net';
+
+export type Deferred<T> = Promise<T> & {
+	resolve: (data: T) => void;
+	reject: (error: any) => void;
+}
+
+export function defer<T = unknown>() {
+	const methods: any = {};
+	const promise = new Promise<T>((resolve, reject) => {
+		methods.resolve = resolve;
+		methods.reject = reject;
+	});
+	return Object.assign(promise, methods) as Deferred<T>;
+}
 
 export function safeJSON(str: string) {
 	try {
@@ -90,10 +102,10 @@ export interface FetchResult {
 	text: () => Promise<string>;
 	json: () => Promise<any>;
 	status?: number;
-	headers?: AnyObject
+	headers?: Record<string, any>
 }
 
-export function request(uri: string, opts: AnyObject = {}) {
+export function request(uri: string, opts: any = {}) {
 	return new Promise<FetchResult>((resolve, reject) => {
 		if (!opts) opts = {};
 		let body = opts.body;
@@ -168,7 +180,7 @@ export function request(uri: string, opts: AnyObject = {}) {
 	});
 }
 
-function encodeQuery(data: AnyObject) {
+function encodeQuery(data: any) {
 	let out = '';
 	for (const key in data) {
 		if (out) out += `&`;
