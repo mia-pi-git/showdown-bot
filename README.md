@@ -115,6 +115,48 @@ export declare class Message {
 }
 ```
 
+Page API:
+```ts
+// request for a page. sent when a user does /join view-bot-[name]-[pageid]
+// to listen for this, use client.on('requestpage', listener);
+export declare class PageRequest {
+    client: Client;
+    from: User;
+    pageid: string;
+    room: Room;
+    constructor(client: Client);
+    static from(client: Client, args: string[], roomId: string): Promise<PageRequest | undefined>;
+    respond(page: PageBuilder | string): Page;
+}
+// made to make it easy to create page html
+export declare class PageBuilder {
+    private elem;
+    constructor();
+    toString(): string;
+    html(text: string): this;
+    querySelector(selector: string): cheerio.Cheerio<cheerio.Node>;
+}
+// page wrapper class
+export declare class Page {
+    user: User;
+    room: Room;
+    content: string;
+    pageid: string;
+    closed: boolean;
+    constructor(req: {
+        from: User;
+        room: Room;
+        pageid: string;
+        content: string;
+    });
+    toString(): string;
+    highlight(title: string, text: string): void;
+    changeSelector(selector: string, html: string): void;
+    close(): void;
+    update(): void;
+}
+```
+
 To listen for a specific message type, just call `client.on(type, listener)`.
 
 The listener will be passed the arguments `args (string[])`, `room (string?)`, `line (PLine)`.

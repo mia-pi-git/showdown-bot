@@ -5,6 +5,7 @@ import EventEmitter from 'events';
 import {UserList} from './user';
 import {RoomList} from './room';
 import {Message} from './message';
+import {PageBuilder, PageRequest} from './page';
 
 export interface Settings {
     name: string;
@@ -50,6 +51,16 @@ export class Client extends EventEmitter {
             }
             if (this.settings.avatar) this.send(`|/avatar ${this.settings.avatar}`);
             if (this.settings.status) this.send(`|/status ${this.settings.status}`);
+        });
+        this.on('pm', async (args, room, line) => {
+            /* room ? room.roomid : 'lobby',
+			`|pm|${user.getIdentity()}|${bot.getIdentity()}||requestpage|${user.name}|${pageid}`
+            */
+            const [, , , type] = args;
+            if (type !== 'requestpage') return;
+            const req = await PageRequest.from(this, args, room);
+            if (!req) return;
+            this.emit('requestpage', req);
         });
     }
     static parse(received: string): PLine[] {

@@ -2,9 +2,10 @@
  * User handling.
  */
 
-import {PSSendable} from './sendable';
-import {Client} from './ps';
+import {PSSendable, PSList} from './bases';
+import {Page, PageBuilder} from './page';
 import {toID} from './lib';
+import {Room} from '.';
 
 export class User extends PSSendable {
     data: Record<string, any> = {};
@@ -50,11 +51,20 @@ export class User extends PSSendable {
         return true;
     }
     toString() { return this.id; }
+    sendPage(room: Room, pageid: string, html: string | PageBuilder) {
+        const page = new Page({
+            from: this,
+            room,
+            pageid, 
+            content: html.toString(),
+        });
+        page.update();
+        return page;
+    }
 }
 
-export class UserList {
+export class UserList extends PSList<User> {
     users = new Map<string, User>();
-    constructor(private client: Client) {}
     async get(id: string) {
         id = toID(id);
         let user = this.users.get(id);
@@ -72,4 +82,7 @@ export class UserList {
             return null;         
         }
     } 
+    values() { return this.users.values() }
+    entries() { return this.users.entries() }
+    keys() { return this.users.keys() }
 }

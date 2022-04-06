@@ -2,7 +2,7 @@
  * Room handling.
  */
 
-import {PSSendable} from './sendable';
+import {PSSendable, PSList} from './bases';
 import {Client} from './ps';
 import {User} from './user';
 
@@ -34,9 +34,8 @@ export class Room extends PSSendable {
     toString() { return this.id; }
 }
 
-export class RoomList {
+export class RoomList extends PSList<Room> {
     private rooms = new Map<string, Room>();
-    constructor(private client: Client) {}
     async get(id: string) {
         let room = this.rooms.get(id);
         if (room) return room;
@@ -50,4 +49,7 @@ export class RoomList {
             return null;
         }
     }
+    values() { return this.rooms.values() }
+    entries() { return this.rooms.entries() }
+    keys() { return this.rooms.keys() }
 }

@@ -13,3 +13,11 @@ export abstract class PSSendable {
     }
     constructor(public client: Client) {}
 }
+
+export abstract class PSList<T, I = string> {
+    constructor(public client: Client) {}
+    abstract get(val: I): Promise<T | null>;
+    abstract entries(): IterableIterator<[I, T]>;
+    abstract values(): IterableIterator<T>;
+    abstract keys(): IterableIterator<I>;
+}
