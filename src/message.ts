@@ -12,8 +12,9 @@ export class Message {
      * (from &)
      */
     to!: User | Room | null;
+    room?: Room | null;
     from: User | null = null;
-    isCommand = false;
+    isPSCommand = false;
     line!: PLine;
     constructor(public client: Client) {}
     static async getUser(name: string, client: Client) {
@@ -35,29 +36,44 @@ export class Message {
             message.text = rest.join('|');
             break;
         } case 'c:': {
-            if (!line.roomid) break;
+            if (!line.roomid) {
+                line.roomid = 'lobby'; // REEE
+            }
             const [, senderName, ...rest] = line.args;
             const sender = await client.users.get(senderName);
             if (sender?.toString() === toID(client.settings.name)) return null;
+            const room = await client.rooms.get(line.roomid);
             message.from = sender;
-            message.to = await client.rooms.get(line.roomid);
+            message.room = room;
+            message.to = room;
             message.text = rest.join('|');
             break;
         } case 'c': {
-            if (!line.roomid) break;
+            if (!line.roomid) {
+                line.roomid = 'lobby'; // REEE
+            }
             const [senderName, ...rest] = line.args;
             const sender = await client.users.get(senderName);
             if (sender?.toString() === toID(client.settings.name)) return null;
+            const room = await client.rooms.get(line.roomid);
             message.from = sender;
-            message.to = await client.rooms.get(line.roomid);
+            message.to = room;
+            message.room = room;
             message.text = rest.join('|');
             break;
         } default: return null;
         }
-        message.isCommand = message.text.startsWith('!');
+        message.isPSCommand = message.text.startsWith('!');
         return message;
     }
     respond(text: string) {
         return this.from?.send(text);
+    }
+    isPM() {
+        return this.room === undefined;
+    }
+    isCommand() {
+        const prefix = this.client.settings.prefix;
+        return !!(prefix && this.text.startsWith(prefix));
     }
 }

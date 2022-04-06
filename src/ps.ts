@@ -13,6 +13,8 @@ export interface Settings {
     prefix?: string;
     status?: string;
     avatar?: string;
+    /* Number of MS to wait before attempting to reconnect. Defaults to one minute. */
+    reconnectMs?: number;
 }
 
 export interface PLine {
@@ -26,6 +28,7 @@ export class Client extends EventEmitter {
     settings: Settings;
     rooms = new RoomList(this);
     users = new UserList(this);
+    private messageQueue = new Promise<void>(resolve => resolve());
     constructor(settings: Settings) {
         super();
         this.settings = settings;
@@ -79,6 +82,9 @@ export class Client extends EventEmitter {
     }
     private onFailure(err: Error) {
         this.emit('error', err);
+
+        console.log('reconnecting...');
+        setTimeout(this.connect.bind(this), this.settings.reconnectMs || 60 * 1000);
     }
 
     private queryResolvers: Record<string, [
@@ -107,7 +113,13 @@ export class Client extends EventEmitter {
 
     send(message: string) {
         if (!this.connection.connected) return;
-        this.connection.sendUTF(message);
+        // thanks to pre for the inspiration here 
+        this.messageQueue = this.messageQueue.then(() => {
+            this.connection!.send(message);
+            return new Promise(resolve => {
+                setTimeout(resolve, 100);
+            });
+        });
     }
     private async handleChallstr(parts: string[]) {
         const [id, ...str] = parts;
@@ -151,6 +163,8 @@ export class Client extends EventEmitter {
         this.connection = connection;
 
         connection.on('error', this.onFailure.bind(this));
+        // @ts-ignore yes it exists :(
+        connection.on('close', this.onFailure.bind(this));
         connection.on('message', this.onMessage.bind(this));
 
         console.info('Connected!');

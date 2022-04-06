@@ -1,14 +1,10 @@
 **A simple, easily customizable bot for connecting to Pokemon Showdown.**
 
-This package has one requirement for connecting to PS.
-- A WebSocket instance (we recommend sockjs-client or WebSocket.)
-(We used to require a HTTP fetcher, and in fact still support it, but we have a native version in src/utils, so it is not required.)
-For customizing fetch, just pass the fetcher instead of null in the second argument.
-
-From there, all you need to do is as follows:
+This package is meant to be as simple as possible. 
+All you need to do to connect to PS is as follows:
 (TS)
 ```ts
-import PS from 'psim.us';
+import {PS} from 'psim.us';
 
 const bot = new PS.Client({
     name: 'uwu', pass: 'uwu',
@@ -16,7 +12,9 @@ const bot = new PS.Client({
 ```
 Then you just call 
 ```ts
-bot.connect('sim3'); // assumes .psim.us if there's no .
+// note these are defaults, so you can just call bot.connect()
+// if you want to connect to main
+bot.connect('sim.smogon.com', 8000);
 ```
 
 For receiving messages, all you need to do is set a listener.
@@ -36,9 +34,13 @@ export interface Settings {
     name: string;
     pass: string;
     rooms?: string[];
+    /* Command prefix */
     prefix?: string;
     status?: string;
     avatar?: string;
+    /* Number of MS to wait before attempting to reconnect.
+    * Defaults to one minute. */
+    reconnectMs?: number;
 }
 ```
 
@@ -90,6 +92,29 @@ export declare class Client extends EventEmitter {
     send(message: string): void;
 }
 ```
+
+Message methods:
+```ts
+export declare class Message {
+    client: Client;
+    text: string;
+    /** User if it's a pm, Room if it's in a room, null if it's a system message
+     * (from &)
+     */
+    to: User | Room | null;
+    room?: Room | null;
+    from: User | null;
+    isPSCommand: boolean;
+    line: PLine;
+    constructor(client: Client);
+    static getUser(name: string, client: Client): Promise<false | User | null>;
+    static from(line: PLine, client: Client): Promise<Message | null | undefined>;
+    respond(text: string): void | undefined;
+    isPM(): boolean;
+    isCommand(): boolean;
+}
+```
+
 To listen for a specific message type, just call `client.on(type, listener)`.
 
 The listener will be passed the arguments `args (string[])`, `room (string?)`, `line (PLine)`.
