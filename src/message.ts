@@ -6,6 +6,8 @@ import {Client, PLine} from './ps';
 import {Room} from './room';
 import {User} from './user';
 
+const RANK_ORDER = ['', '+', '%', '@', '*', '#', '&'];
+
 export class Message {
     text!: string;
     /** User if it's a pm, Room if it's in a room, null if it's a system message 
@@ -75,5 +77,20 @@ export class Message {
     isCommand() {
         const prefix = this.client.settings.prefix;
         return !!(prefix && this.text.startsWith(prefix));
+    }
+    isRank(rank: string) {
+        if (!this.from) return false;
+        let auth = this.from.group;
+        if (this.room) {
+            for (const k in this.room.auth) {
+                if (this.room.auth[k].includes(this.from.id)) {
+                    if (RANK_ORDER.indexOf(k) > RANK_ORDER.indexOf(rank)) {
+                        // higher than global rank
+                        auth = k;
+                    }
+                }
+            }
+        }
+        return RANK_ORDER.indexOf(auth) >= RANK_ORDER.indexOf(rank);
     }
 }

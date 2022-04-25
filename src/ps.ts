@@ -151,6 +151,8 @@ export class Client extends EventEmitter {
                 this.emit('ready');
             });
         } catch (e) {
+            this.emit('loginfailed', e);
+            this.emit('error', e);
             throw new Error("Error in logging in: " + e);
         }
     }

@@ -8,10 +8,10 @@
   },
   "name": "psim.us",
   "license": "MIT",
-  "version": "1.1.0",
+  "version": "1.1.3",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "npx tsc -p src",
+    "build": "npx tsc -p ./",
     "start": "npm run build && node built/index.js"
   },
   "repository": {
