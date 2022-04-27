@@ -28,7 +28,9 @@ export function safeJSON(str: string) {
 	}
 }
 
-export function toID(text: any) {
+const roomRegex = /[^a-z0-9-]+/g;
+const noRoomRegex = /[^a-z0-9]+/g;
+export function toID(text: any, isRoom = false) {
 	if (text && text.id) {
 		text = text.id;
 	} else if (text && text.userid) {
@@ -37,7 +39,9 @@ export function toID(text: any) {
 		text = text.roomid;
 	}
 	if (typeof text !== 'string' && typeof text !== 'number') return '';
-	return ('' + text).toLowerCase().replace(/[^a-z0-9]+/g, '') as string;
+	return ('' + text)
+		.toLowerCase()
+		.replace(isRoom ? roomRegex : noRoomRegex, '') as string;
 }
 
 export function makeAsyncEval(evalFunct: (code: string) => any) {

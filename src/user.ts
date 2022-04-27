@@ -22,11 +22,11 @@ export class User extends PSSendable {
         if (data.rooms) {
             for (const roomWithRank in data.rooms) {
                 let id, group;
-                if (toID(roomWithRank) !== roomWithRank) {
+                if (toID(roomWithRank, true) !== roomWithRank) {
                     group = roomWithRank.charAt(0);
-                    id = toID(roomWithRank);
+                    id = toID(roomWithRank, true);
                 } else {
-                    id = toID(roomWithRank);
+                    id = toID(roomWithRank, true);
                     group = '';
                 }
                 this.rooms[id] = {

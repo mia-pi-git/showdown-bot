@@ -68,9 +68,7 @@ export class Client extends EventEmitter {
         let [possibleRoomid, rest] = splitFirst(received, '\n');
         let roomid;
         if (possibleRoomid?.startsWith('>')) {
-            roomid = possibleRoomid
-                .toLowerCase()
-                .replace(/[^a-z0-9-]+/g, "");;
+            roomid = toID(possibleRoomid, true);
         } else {
             rest = received;
         }
