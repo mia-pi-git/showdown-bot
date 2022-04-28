@@ -109,10 +109,18 @@ export declare class Message {
     constructor(client: Client);
     static getUser(name: string, client: Client): Promise<false | User | null>;
     static from(line: PLine, client: Client): Promise<Message | null | undefined>;
+    /** If the message has a room, sends the response to that room
+     * - else PMs the user that it's from
+     **/
     respond(text: string): void | undefined;
+    /** Sends a reply in pms. */
+    privateRespond(text: string): void | undefined;
     isPM(): boolean;
     isCommand(): boolean;
+    isRank(rank: string): boolean;
+    clone(): Message;
 }
+
 ```
 
 Page API:

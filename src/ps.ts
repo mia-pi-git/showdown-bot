@@ -166,7 +166,7 @@ export class Client extends EventEmitter {
             }
             const messageObj = await Message.from(m, this);
             if (messageObj) {
-                return this.emit('message', messageObj);
+                return this.emit('message', messageObj.clone());
             }
             this.emit(m.type, [...m.args], m.roomid, {...m});
             

@@ -68,7 +68,14 @@ export class Message {
         message.isPSCommand = message.text.startsWith('!');
         return message;
     }
+    /** If the message has a room, sends the response to that room 
+     * - else PMs the user that it's from
+     **/
     respond(text: string) {
+        return (this.room || this.from)?.send(text);
+    }
+    /** Sends a reply in pms. */
+    privateRespond(text: string) {
         return this.from?.send(text);
     }
     isPM() {
@@ -92,5 +99,10 @@ export class Message {
             }
         }
         return RANK_ORDER.indexOf(auth) >= RANK_ORDER.indexOf(rank);
+    }
+    clone() {
+        const message = new Message(this.client);
+        Object.assign(message, this);
+        return message;
     }
 }
