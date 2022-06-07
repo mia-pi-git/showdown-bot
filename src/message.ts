@@ -10,6 +10,7 @@ const RANK_ORDER = ['', '+', '%', '@', '*', '#', '&'];
 
 export class Message {
     text!: string;
+    group = ' ';
     /** User if it's a pm, Room if it's in a room, null if it's a system message 
      * (from &)
      */
@@ -29,6 +30,7 @@ export class Message {
         switch (line.type) {
         case 'pm': {
             const [senderName, receiverName, ...rest] = line.args;
+            message.group = senderName.charAt(0);
             const sender = await this.getUser(senderName, client);
             if (sender?.toString() === toID(client.settings.name)) return null;
             if (sender === false) return; // ??
@@ -42,6 +44,7 @@ export class Message {
                 line.roomid = 'lobby'; // REEE
             }
             const [, senderName, ...rest] = line.args;
+            message.group = senderName.charAt(0);
             const sender = await client.users.get(senderName);
             if (sender?.toString() === toID(client.settings.name)) return null;
             const room = await client.rooms.get(line.roomid);
@@ -55,6 +58,7 @@ export class Message {
                 line.roomid = 'lobby'; // REEE
             }
             const [senderName, ...rest] = line.args;
+            message.group = senderName.charAt(0);
             const sender = await client.users.get(senderName);
             if (sender?.toString() === toID(client.settings.name)) return null;
             const room = await client.rooms.get(line.roomid);
@@ -97,6 +101,9 @@ export class Message {
                     }
                 }
             }
+        }
+        if (this.group.trim()) {
+            auth = this.group;
         }
         return RANK_ORDER.indexOf(auth) >= RANK_ORDER.indexOf(rank);
     }
