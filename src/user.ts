@@ -72,7 +72,7 @@ export class UserList extends PSList<User> {
         try {
             const data = await this.client.query('userdetails', [id]);
             if (data.rooms === false) {
-                throw new Error("User offline");
+                return null;
             }
             user = new User(this.client);
             user.setData(data);
