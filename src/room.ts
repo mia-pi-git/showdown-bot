@@ -41,6 +41,9 @@ export class RoomList extends PSList<Room> {
         if (room) return room;
         try {
             const data = await this.client.query('roominfo', [id]);
+            if (data.error) { // room doesn't exist
+                return null;
+            }
             room = new Room(this.client);
             room.setData(data);
             this.rooms.set(room.id, room);
